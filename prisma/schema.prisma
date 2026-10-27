@@ -33,21 +33,9 @@ model User {
   clientAppointments   Appointment[] @relation("ClientAppointments")
   providerAppointments Appointment[] @relation("ProviderAppointments")
 
+  services Service[]
+
   @@map("users")
-}
-
-model Service {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  price       Decimal  @db.Decimal(10, 2)
-  duration    Int
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  appointments Appointment[]
-
-  @@map("services")
 }
 
 model Appointment {
@@ -66,4 +54,21 @@ model Appointment {
   service  Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
 
   @@map("appointments")
+}
+
+model Service {
+  id                String   @id @default(uuid())
+  title             String
+  description       String?
+  price             Decimal
+  durationInMinutes Int      @map("duration_in_minutes")
+  userId            String   @map("user_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  appointments Appointment[]
+
+  @@map("services")
 }

@@ -2,8 +2,9 @@ import { fastify } from 'fastify';
 import fastifyJwt from '@fastify/jwt';
 import { prisma } from './lib/prisma.js';
 import { userRoutes } from './http/routes/users.routes.js';
+import { servicesRoutes } from './http/routes/services.routes.js';
 
-const app = fastify({ logger: true });
+export const app = fastify({ logger: true });
 
 app.register(fastifyJwt, {
     secret: 'bookify-super-secret-key',
@@ -13,7 +14,8 @@ app.get('/health', async () => {
     return { status: 'ok', message: 'Bookify API is running smoothly!' };
 });
 
-app.register(userRoutes); // 2. Registar as rotas no Fastify
+app.register(userRoutes);
+app.register(servicesRoutes);
 
 const start = async () => {
     try {
