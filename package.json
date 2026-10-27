@@ -16,12 +16,21 @@
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",
     "@types/node": "^26.6.5",
+    "@types/supertest": "^7.2.1",
     "prisma": "6",
+    "supertest": "^7.3.1",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^5.0.5"
   },
   "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "postinstall": "prisma skills sync || exit 0"
+    "start:dev": "tsx watch src/server.ts",
+    "build": "tsup src --out-dir build",
+    "start": "node build/server.js",
+    "test": "vitest run --dir src/use-cases",
+    "test:watch": "vitest --dir src/use-cases",
+    "test:e2e": "vitest run --dir src/http"
   }
 }
