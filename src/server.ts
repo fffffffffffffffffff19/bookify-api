@@ -1,11 +1,14 @@
 import { fastify } from 'fastify';
 import { prisma } from './lib/prisma.js';
+import { userRoutes } from './http/routes/users.routes.js';
 
 const app = fastify({ logger: true });
 
 app.get('/health', async () => {
     return { status: 'ok', message: 'Bookify API is running smoothly!' };
 });
+
+app.register(userRoutes); // 2. Registar as rotas no Fastify
 
 const start = async () => {
     try {
