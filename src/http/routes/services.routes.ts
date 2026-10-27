@@ -1,15 +1,20 @@
 import type { FastifyInstance } from 'fastify';
 import { verifyJWT } from '../middlewares/verify-jwt.js';
+import { verifyUserRole } from '../middlewares/verify-user-role.js';
 import { createService } from '../controllers/create-service.js';
 import { fetchUserServices } from '../controllers/fetch-user-services.js';
 import { updateService } from '../controllers/update-service.js';
 import { deleteService } from '../controllers/delete-service.js';
 
 export async function servicesRoutes(app: FastifyInstance) {
-    app.addHook('onRequest', verifyJWT);
+    app.get('/services', { onRequest: [verifyJWT] }, fetchUserServices);
 
-    app.post('/services', createService);
-    app.get('/services', fetchUserServices);
-    app.put('/services/:id', updateService);
-    app.delete('/services/:id', deleteService);
+    app.register(async (providerRoutes) => {
+        providerRoutes.addHook('onRequest', verifyJWT);
+        providerRoutes.addHook('onRequest', verifyUserRole('PROVIDER'));
+
+        providerRoutes.post('/services', createService);
+        providerRoutes.put('/services/:id', updateService);
+        providerRoutes.delete('/services/:id', deleteService);
+    });
 }
