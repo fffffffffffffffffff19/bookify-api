@@ -56,7 +56,6 @@ export class CreateAppointmentUseCase {
             );
         }
 
-        // Check for conflicting appointments for the provider
         const conflictingAppointment = await this.appointmentsRepository.findConflictingAppointment(
             service.userId,
             startTime,
