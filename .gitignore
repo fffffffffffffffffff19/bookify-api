@@ -1,3 +1,10 @@
+.agents
+.claude
+.cursor
+.devin
+.vscode
+.idea
+
 # Logs
 logs
 *.log

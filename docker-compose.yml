@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: bitnami/postgresql:latest
+    container_name: bookify-postgres
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=bookify_user
+      - POSTGRES_PASSWORD=bookify_pass
+      - POSTGRES_DB=bookify_db
+    volumes:
+      - bookify_pgdata:/bitnami/postgresql
+
+volumes:
+  bookify_pgdata:
