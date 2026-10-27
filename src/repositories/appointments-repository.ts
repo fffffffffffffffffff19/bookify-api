@@ -1,9 +1,14 @@
 import type { Appointment, Prisma } from '@prisma/client';
 
 export interface AppointmentsRepository {
-    create(data: Prisma.AppointmentUncheckedCreateInput): Promise<Appointment>;
-    findByServiceAndDate(serviceId: string, startTime: Date): Promise<Appointment | null>;
     findById(id: string): Promise<Appointment | null>;
-    save(appointment: Appointment): Promise<Appointment>;
     findManyByUserId(userId: string): Promise<Appointment[]>;
+    findByServiceAndDate(serviceId: string, date: Date): Promise<Appointment | null>;
+    findConflictingAppointment(
+        providerId: string,
+        startTime: Date,
+        endTime: Date,
+    ): Promise<Appointment | null>;
+    create(data: Prisma.AppointmentUncheckedCreateInput): Promise<Appointment>;
+    save(appointment: Appointment): Promise<Appointment>;
 }

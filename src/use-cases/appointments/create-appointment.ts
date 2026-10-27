@@ -1,6 +1,7 @@
+import type { Appointment } from '@prisma/client';
 import type { AppointmentsRepository } from '../../repositories/appointments-repository.js';
 import type { ServicesRepository } from '../../repositories/services-repository.js';
-import type { Appointment } from '@prisma/client';
+import { businessHoursConfig } from '../../config/business-hours.js';
 
 interface CreateAppointmentUseCaseRequest {
     clientId: string;
@@ -29,21 +30,42 @@ export class CreateAppointmentUseCase {
             throw new Error('Service not found.');
         }
 
-        if (startTime < new Date()) {
-            throw new Error('Cannot create an appointment in the past.');
+        const durationInMs = service.durationInMinutes * 60 * 1000;
+        const endTime = new Date(startTime.getTime() + durationInMs);
+
+        const dayOfWeek = startTime.getDay();
+        const isAllowedDay = businessHoursConfig.allowedDays.includes(dayOfWeek);
+
+        if (!isAllowedDay) {
+            throw new Error('Appointments cannot be scheduled on non-working days.');
         }
 
-        const conflictingAppointment = await this.appointmentsRepository.findByServiceAndDate(
-            serviceId,
+        const startHour = startTime.getHours();
+        const endHour = endTime.getHours();
+        const endMinutes = endTime.getMinutes();
+
+        const { openHour, closeHour } = businessHoursConfig;
+
+        if (
+            startHour < openHour ||
+            endHour > closeHour ||
+            (endHour === closeHour && endMinutes > 0)
+        ) {
+            throw new Error(
+                `Appointments must be within business hours (${String(openHour).padStart(2, '0')}:00 - ${String(closeHour).padStart(2, '0')}:00).`
+            );
+        }
+
+        // Check for conflicting appointments for the provider
+        const conflictingAppointment = await this.appointmentsRepository.findConflictingAppointment(
+            service.userId,
             startTime,
+            endTime,
         );
 
         if (conflictingAppointment) {
-            throw new Error('This time slot is already booked for this service.');
+            throw new Error('This time slot is already booked.');
         }
-
-        const durationInMinutes = Number(service.durationInMinutes);
-        const endTime = new Date(startTime.getTime() + durationInMinutes * 60 * 1000);
 
         const appointment = await this.appointmentsRepository.create({
             clientId,
@@ -51,6 +73,7 @@ export class CreateAppointmentUseCase {
             serviceId,
             startTime,
             endTime,
+            status: 'PENDING',
         });
 
         return {
