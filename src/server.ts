@@ -1,8 +1,13 @@
 import { fastify } from 'fastify';
+import fastifyJwt from '@fastify/jwt';
 import { prisma } from './lib/prisma.js';
 import { userRoutes } from './http/routes/users.routes.js';
 
 const app = fastify({ logger: true });
+
+app.register(fastifyJwt, {
+    secret: 'bookify-super-secret-key',
+});
 
 app.get('/health', async () => {
     return { status: 'ok', message: 'Bookify API is running smoothly!' };
