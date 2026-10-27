@@ -22,6 +22,30 @@ export class PrismaAppointmentsRepository implements AppointmentsRepository {
         return appointment;
     }
 
+    async findConflictingAppointment(serviceId: string, startTime: Date, endTime: Date) {
+        const appointment = await prisma.appointment.findFirst({
+            where: {
+                serviceId,
+                OR: [
+                    {
+                        startTime: {
+                            gte: startTime,
+                            lt: endTime,
+                        },
+                    },
+                    {
+                        endTime: {
+                            gt: startTime,
+                            lte: endTime,
+                        },
+                    },
+                ],
+            },
+        });
+
+        return appointment;
+    }
+
     async findById(id: string) {
         const appointment = await prisma.appointment.findUnique({
             where: {
