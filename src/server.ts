@@ -3,6 +3,7 @@ import fastifyJwt from '@fastify/jwt';
 import { prisma } from './lib/prisma.js';
 import { userRoutes } from './http/routes/users.routes.js';
 import { servicesRoutes } from './http/routes/services.routes.js';
+import { appointmentsRoutes } from './http/routes/appointments.routes.js';
 
 export const app = fastify({ logger: true });
 
@@ -16,6 +17,7 @@ app.get('/health', async () => {
 
 app.register(userRoutes);
 app.register(servicesRoutes);
+app.register(appointmentsRoutes);
 
 const start = async () => {
     try {
