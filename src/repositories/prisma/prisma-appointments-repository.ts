@@ -1,5 +1,5 @@
 import { prisma } from '../../lib/prisma.js';
-import type { Prisma } from '@prisma/client';
+import type { Prisma, Appointment } from '@prisma/client';
 import type { AppointmentsRepository } from '../appointments-repository.js';
 
 export class PrismaAppointmentsRepository implements AppointmentsRepository {
@@ -20,5 +20,39 @@ export class PrismaAppointmentsRepository implements AppointmentsRepository {
         });
 
         return appointment;
+    }
+
+    async findById(id: string) {
+        const appointment = await prisma.appointment.findUnique({
+            where: {
+                id,
+            },
+        });
+
+        return appointment;
+    }
+
+    async save(appointment: Appointment) {
+        const updatedAppointment = await prisma.appointment.update({
+            where: {
+                id: appointment.id,
+            },
+            data: appointment,
+        });
+
+        return updatedAppointment;
+    }
+
+    async findManyByUserId(userId: string) {
+        const appointments = await prisma.appointment.findMany({
+            where: {
+                OR: [
+                    { clientId: userId },
+                    { providerId: userId },
+                ],
+            },
+        });
+
+        return appointments;
     }
 }
