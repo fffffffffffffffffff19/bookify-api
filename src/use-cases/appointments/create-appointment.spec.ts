@@ -103,6 +103,50 @@ describe('Create Appointment Use Case', () => {
         ).rejects.toThrow('This time slot is already booked.');
     });
 
+    it('should prevent overlaps across services owned by the same provider', async () => {
+        await servicesRepository.create({
+            id: 'service-2',
+            title: 'Coloring',
+            price: 80,
+            durationInMinutes: 30,
+            userId: 'provider-1',
+        });
+        const startTime = new Date(2026, 9, 28, 10, 0, 0, 0);
+        await appointmentsRepository.create({
+            clientId: 'client-1',
+            providerId: 'provider-1',
+            serviceId: 'service-1',
+            startTime: new Date(startTime.getTime() - 15 * 60 * 1000),
+            endTime: new Date(startTime.getTime() + 15 * 60 * 1000),
+        });
+
+        await expect(sut.execute({
+            clientId: 'client-2',
+            serviceId: 'service-2',
+            startTime,
+        })).rejects.toThrow('This time slot is already booked.');
+    });
+
+    it('should allow a slot when the existing provider appointment is cancelled', async () => {
+        const startTime = new Date(2026, 9, 28, 10, 0, 0, 0);
+        await appointmentsRepository.create({
+            clientId: 'client-1',
+            providerId: 'provider-1',
+            serviceId: 'another-service',
+            startTime,
+            endTime: new Date(startTime.getTime() + 30 * 60 * 1000),
+            status: 'CANCELLED',
+        });
+
+        const { appointment } = await sut.execute({
+            clientId: 'client-2',
+            serviceId: 'service-1',
+            startTime,
+        });
+
+        expect(appointment.status).toEqual('PENDING');
+    });
+
     it('should respect updated business hours when creating an appointment', async () => {
         await businessHoursRepository.save({
             allowedDays: [1, 2, 3, 4, 5],
