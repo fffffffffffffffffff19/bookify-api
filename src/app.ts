@@ -12,6 +12,10 @@ import { appointmentsRoutes } from './http/routes/appointments.routes.js';
 import { adminRoutes } from './http/routes/admin.routes.js';
 import { transformOpenApiRoute } from './http/schemas/openapi.js';
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+}
+
 export function buildApp(options: FastifyServerOptions = {}) {
     const app = fastify(options);
 
@@ -116,6 +120,8 @@ export function buildApp(options: FastifyServerOptions = {}) {
     });
 
     app.setErrorHandler((error, request, reply) => {
+        const errorRecord = isRecord(error) ? error : {};
+
         if (error instanceof ZodError) {
             return reply
                 .status(400)
@@ -126,27 +132,29 @@ export function buildApp(options: FastifyServerOptions = {}) {
                 });
         }
 
-        if ('code' in error && error.code === 'FST_ERR_VALIDATION') {
+        if (errorRecord.code === 'FST_ERR_VALIDATION') {
             return reply.status(400).send({
                 message: 'Validation error.',
                 errorCode: 'VALIDATION_ERROR',
-                issues: 'validation' in error && Array.isArray(error.validation)
-                    ? error.validation
+                issues: Array.isArray(errorRecord.validation)
+                    ? errorRecord.validation
                     : [],
             });
         }
 
         if (
-            ('statusCode' in error && error.statusCode === 429) ||
-            ('code' in error && error.code === 'FST_ERR_RATE_LIMIT')
+            errorRecord.statusCode === 429 ||
+            errorRecord.code === 'FST_ERR_RATE_LIMIT'
         ) {
-            const rateLimitError = 'error' in error && typeof error.error === 'object' && error.error !== null
-                ? error.error as { code?: string; message?: string }
-                : undefined;
+            const rateLimitError = isRecord(errorRecord.error) ? errorRecord.error : {};
             return reply.status(429).send({
                 error: {
-                    code: rateLimitError?.code ?? 'TOO_MANY_REQUESTS',
-                    message: rateLimitError?.message ?? error.message ?? 'Rate limit exceeded. Please try again later.',
+                    code: typeof rateLimitError.code === 'string' ? rateLimitError.code : 'TOO_MANY_REQUESTS',
+                    message: typeof rateLimitError.message === 'string'
+                        ? rateLimitError.message
+                        : typeof errorRecord.message === 'string'
+                            ? errorRecord.message
+                            : 'Rate limit exceeded. Please try again later.',
                 },
             });
         }
@@ -158,15 +166,15 @@ export function buildApp(options: FastifyServerOptions = {}) {
             });
         }
 
-        if ('code' in error && error.code === 'P2002') {
+        if (errorRecord.code === 'P2002') {
             return reply.status(409).send({
                 message: 'A resource with these values already exists.',
                 errorCode: 'RESOURCE_CONFLICT',
             });
         }
 
-        const statusCode = 'statusCode' in error && typeof error.statusCode === 'number'
-            ? error.statusCode
+        const statusCode = typeof errorRecord.statusCode === 'number'
+            ? errorRecord.statusCode
             : 500;
         if (statusCode === 401) {
             return reply.status(401).send({
