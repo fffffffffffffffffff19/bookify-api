@@ -33,6 +33,10 @@ export class RescheduleAppointmentUseCase {
         userRole,
         startTime,
     }: RescheduleAppointmentUseCaseRequest): Promise<RescheduleAppointmentUseCaseResponse> {
+        if (startTime <= new Date()) {
+            throw new BusinessRuleError('Appointments must be scheduled in the future.', 'PAST_APPOINTMENT');
+        }
+
         const appointment = await this.appointmentsRepository.findById(appointmentId);
         if (!appointment) {
             throw new ResourceNotFoundError('Appointment not found.');
@@ -68,19 +72,14 @@ export class RescheduleAppointmentUseCase {
             );
         }
 
-        const conflictingAppointment = await this.appointmentsRepository.findConflictingAppointment(
-            appointment.providerId,
+        const updatedAppointment = await this.appointmentsRepository.rescheduleIfAvailable(
+            appointment.id,
             startTime,
             endTime,
-            appointment.id,
         );
-        if (conflictingAppointment) {
+        if (!updatedAppointment) {
             throw new ResourceConflictError('This time slot is already booked.', 'BOOKING_CONFLICT');
         }
-
-        appointment.startTime = startTime;
-        appointment.endTime = endTime;
-        const updatedAppointment = await this.appointmentsRepository.save(appointment);
 
         return { appointment: updatedAppointment };
     }

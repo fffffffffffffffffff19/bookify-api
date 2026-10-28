@@ -1,6 +1,6 @@
 import type { AppointmentsRepository } from '../../repositories/appointments-repository.js';
 import type { Appointment } from '@prisma/client';
-import { BusinessRuleError, ForbiddenError, ResourceNotFoundError } from '../../errors/application-error.js';
+import { BusinessRuleError, ForbiddenError, ResourceConflictError, ResourceNotFoundError } from '../../errors/application-error.js';
 
 interface CancelAppointmentUseCaseRequest {
     appointmentId: string;
@@ -39,12 +39,17 @@ export class CancelAppointmentUseCase {
             throw new BusinessRuleError('Cannot cancel a past appointment.', 'PAST_APPOINTMENT');
         }
 
-        (appointment as any).status = 'CANCELLED';
-
-        await this.appointmentsRepository.save(appointment);
+        const updatedAppointment = await this.appointmentsRepository.transitionStatus(
+            appointment.id,
+            'PENDING',
+            'CANCELLED',
+        );
+        if (!updatedAppointment) {
+            throw new ResourceConflictError('Appointment status changed before the cancellation completed.', 'APPOINTMENT_STATE_CONFLICT');
+        }
 
         return {
-            appointment,
+            appointment: updatedAppointment,
         };
     }
 }

@@ -32,5 +32,11 @@ export interface AppointmentsRepository {
     ): Promise<Appointment | null>;
     create(data: Prisma.AppointmentUncheckedCreateInput): Promise<Appointment>;
     createIfNoConflict(data: Prisma.AppointmentUncheckedCreateInput): Promise<Appointment | null>;
+    rescheduleIfAvailable(id: string, startTime: Date, endTime: Date): Promise<Appointment | null>;
+    transitionStatus(
+        id: string,
+        expectedStatus: Appointment['status'],
+        status: Appointment['status'],
+    ): Promise<Appointment | null>;
     save(appointment: Appointment): Promise<Appointment>;
 }

@@ -133,6 +133,42 @@ export class InMemoryAppointmentsRepository implements AppointmentsRepository {
         return this.create(data);
     }
 
+    async rescheduleIfAvailable(
+        id: string,
+        startTime: Date,
+        endTime: Date,
+    ): Promise<Appointment | null> {
+        const appointment = this.items.find((item) => item.id === id && item.status === 'PENDING');
+        if (!appointment) return null;
+
+        const conflict = this.items.some(
+            (item) => item.id !== id &&
+                item.providerId === appointment.providerId &&
+                item.status !== 'CANCELLED' &&
+                item.startTime < endTime &&
+                item.endTime > startTime,
+        );
+        if (conflict) return null;
+
+        appointment.startTime = startTime;
+        appointment.endTime = endTime;
+        appointment.updatedAt = new Date();
+        return appointment;
+    }
+
+    async transitionStatus(
+        id: string,
+        expectedStatus: Appointment['status'],
+        status: Appointment['status'],
+    ): Promise<Appointment | null> {
+        const appointment = this.items.find((item) => item.id === id && item.status === expectedStatus);
+        if (!appointment) return null;
+
+        appointment.status = status;
+        appointment.updatedAt = new Date();
+        return appointment;
+    }
+
     async save(appointment: Appointment): Promise<Appointment> {
         const index = this.items.findIndex((item) => item.id === appointment.id);
 

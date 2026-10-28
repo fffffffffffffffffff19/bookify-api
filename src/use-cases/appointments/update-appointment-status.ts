@@ -3,6 +3,7 @@ import type { AppointmentsRepository } from '../../repositories/appointments-rep
 import {
     BusinessRuleError,
     ForbiddenError,
+    ResourceConflictError,
     ResourceNotFoundError,
 } from '../../errors/application-error.js';
 
@@ -77,8 +78,14 @@ export class UpdateAppointmentStatusUseCase {
             );
         }
 
-        appointment.status = status;
-        const updatedAppointment = await this.appointmentsRepository.save(appointment);
+        const updatedAppointment = await this.appointmentsRepository.transitionStatus(
+            appointment.id,
+            'PENDING',
+            status,
+        );
+        if (!updatedAppointment) {
+            throw new ResourceConflictError('Appointment status changed before the update completed.', 'APPOINTMENT_STATE_CONFLICT');
+        }
 
         return { appointment: updatedAppointment };
     }

@@ -10,6 +10,14 @@ let servicesRepository: InMemoryServicesRepository;
 let businessHoursRepository: InMemoryBusinessHoursRepository;
 let sut: CreateAppointmentUseCase;
 
+function nextWeekdayAt(hour: number): Date {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    while (date.getDay() === 0 || date.getDay() === 6) date.setDate(date.getDate() + 1);
+    date.setHours(hour, 0, 0, 0);
+    return date;
+}
+
 describe('Create Appointment Use Case', () => {
     beforeEach(async () => {
         appointmentsRepository = new InMemoryAppointmentsRepository();
@@ -31,12 +39,7 @@ describe('Create Appointment Use Case', () => {
     });
 
     it('should be able to create an appointment within business hours', async () => {
-        const startTime = new Date();
-        startTime.setDate(startTime.getDate() + 1);
-        startTime.setHours(10, 0, 0, 0);
-
-        if (startTime.getDay() === 0) startTime.setDate(startTime.getDate() + 1);
-        if (startTime.getDay() === 6) startTime.setDate(startTime.getDate() + 2);
+        const startTime = nextWeekdayAt(10);
 
         const { appointment } = await sut.execute({
             clientId: 'client-1',
@@ -49,12 +52,7 @@ describe('Create Appointment Use Case', () => {
     });
 
     it('should not be able to create appointments outside business hours', async () => {
-        const startTime = new Date();
-        startTime.setDate(startTime.getDate() + 1);
-        startTime.setHours(7, 0, 0, 0);
-
-        if (startTime.getDay() === 0) startTime.setDate(startTime.getDate() + 1);
-        if (startTime.getDay() === 6) startTime.setDate(startTime.getDate() + 2);
+        const startTime = nextWeekdayAt(7);
 
         await expect(() =>
             sut.execute({
@@ -82,12 +80,7 @@ describe('Create Appointment Use Case', () => {
     });
 
     it('should not be able to create overlapping appointments for the same provider', async () => {
-        const startTime = new Date();
-        startTime.setDate(startTime.getDate() + 1);
-        startTime.setHours(14, 0, 0, 0);
-
-        if (startTime.getDay() === 0) startTime.setDate(startTime.getDate() + 1);
-        if (startTime.getDay() === 6) startTime.setDate(startTime.getDate() + 2);
+        const startTime = nextWeekdayAt(14);
 
         await sut.execute({
             clientId: 'client-1',
@@ -112,7 +105,7 @@ describe('Create Appointment Use Case', () => {
             durationInMinutes: 30,
             userId: 'provider-1',
         });
-        const startTime = new Date(2026, 9, 28, 10, 0, 0, 0);
+        const startTime = nextWeekdayAt(10);
         await appointmentsRepository.create({
             clientId: 'client-1',
             providerId: 'provider-1',
@@ -151,7 +144,7 @@ describe('Create Appointment Use Case', () => {
     });
 
     it('should allow a slot when the existing provider appointment is cancelled', async () => {
-        const startTime = new Date(2026, 9, 28, 10, 0, 0, 0);
+        const startTime = nextWeekdayAt(10);
         await appointmentsRepository.create({
             clientId: 'client-1',
             providerId: 'provider-1',
@@ -176,12 +169,20 @@ describe('Create Appointment Use Case', () => {
             openHour: 10,
             closeHour: 16,
         });
-        const startTime = new Date(2026, 9, 28, 9, 0, 0, 0);
+        const startTime = nextWeekdayAt(9);
 
         await expect(sut.execute({
             clientId: 'client-1',
             serviceId: 'service-1',
             startTime,
         })).rejects.toThrow('Appointments must be within business hours (10:00 - 16:00).');
+    });
+
+    it('rejects appointment start times in the past', async () => {
+        await expect(sut.execute({
+            clientId: 'client-1',
+            serviceId: 'service-1',
+            startTime: new Date(Date.now() - 60_000),
+        })).rejects.toThrow('Appointments must be scheduled in the future.');
     });
 });

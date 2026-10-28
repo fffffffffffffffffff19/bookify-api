@@ -16,7 +16,7 @@ describe('Register Use Case', () => {
         const { user } = await sut.execute({
             name: 'John Doe',
             email: 'johndoe@example.com',
-            password: '123456',
+            password: 'password-123',
         });
 
         expect(user.id).toEqual(expect.any(String));
@@ -28,7 +28,7 @@ describe('Register Use Case', () => {
         const request = {
             name: 'Admin Attempt',
             email: 'admin-attempt@example.com',
-            password: '123456',
+            password: 'password-123',
             role: 'ADMIN',
         };
 
@@ -41,11 +41,11 @@ describe('Register Use Case', () => {
         const { user } = await sut.execute({
             name: 'John Doe',
             email: 'johndoe@example.com',
-            password: '123456',
+            password: 'password-123',
         });
 
         const isPasswordSuccessfullyHashed = await compare(
-            '123456',
+            'password-123',
             user.passwordHash
         );
 
@@ -58,14 +58,14 @@ describe('Register Use Case', () => {
         await sut.execute({
             name: 'John Doe',
             email,
-            password: '123456',
+            password: 'password-123',
         });
 
         await expect(() =>
             sut.execute({
                 name: 'Jane Doe',
                 email,
-                password: '654321',
+                password: 'password-456',
             })
         ).rejects.toThrow('E-mail already exists.');
     });

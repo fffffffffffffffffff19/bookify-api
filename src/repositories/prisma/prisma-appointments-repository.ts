@@ -82,6 +82,66 @@ export class PrismaAppointmentsRepository implements AppointmentsRepository {
         return appointment;
     }
 
+    async rescheduleIfAvailable(id: string, startTime: Date, endTime: Date) {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            try {
+                return await prisma.$transaction(async (transaction) => {
+                    const appointment = await transaction.appointment.findFirst({
+                        where: { id, status: 'PENDING' },
+                        select: { providerId: true },
+                    });
+                    if (!appointment) return null;
+
+                    const conflict = await transaction.appointment.findFirst({
+                        where: {
+                            id: { not: id },
+                            providerId: appointment.providerId,
+                            status: { not: 'CANCELLED' },
+                            startTime: { lt: endTime },
+                            endTime: { gt: startTime },
+                        },
+                        select: { id: true },
+                    });
+                    if (conflict) return null;
+
+                    const updated = await transaction.appointment.updateMany({
+                        where: { id, status: 'PENDING' },
+                        data: { startTime, endTime },
+                    });
+                    if (updated.count !== 1) return null;
+
+                    return transaction.appointment.findUnique({ where: { id } });
+                }, {
+                    isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+                });
+            } catch (error) {
+                const isSerializationConflict =
+                    typeof error === 'object' &&
+                    error !== null &&
+                    'code' in error &&
+                    error.code === 'P2034';
+
+                if (!isSerializationConflict || attempt === 2) throw error;
+            }
+        }
+
+        return null;
+    }
+
+    async transitionStatus(
+        id: string,
+        expectedStatus: Appointment['status'],
+        status: Appointment['status'],
+    ) {
+        const updated = await prisma.appointment.updateMany({
+            where: { id, status: expectedStatus },
+            data: { status },
+        });
+        if (updated.count !== 1) return null;
+
+        return prisma.appointment.findUnique({ where: { id } });
+    }
+
     async findById(id: string) {
         const appointment = await prisma.appointment.findUnique({
             where: {

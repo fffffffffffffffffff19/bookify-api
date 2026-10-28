@@ -49,7 +49,7 @@ export class UpdateUserProfileUseCase {
             if (oldPassword === undefined || !(await compare(oldPassword, user.passwordHash))) {
                 throw new InvalidCredentialsError();
             }
-            updateData.passwordHash = await hash(newPassword, 6);
+            updateData.passwordHash = await hash(newPassword, 10);
         }
 
         const updatedUser = await this.usersRepository.update(userId, updateData);

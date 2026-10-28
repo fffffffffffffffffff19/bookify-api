@@ -108,4 +108,42 @@ describe('Reschedule Appointment Use Case', () => {
             startTime: conflictingStart,
         })).rejects.toBeInstanceOf(ResourceConflictError);
     });
+
+    it('rejects rescheduling to a start time in the past', async () => {
+        await expect(sut.execute({
+            appointmentId,
+            userId: 'client-1',
+            userRole: 'CLIENT',
+            startTime: new Date(Date.now() - 60_000),
+        })).rejects.toThrow('Appointments must be scheduled in the future.');
+    });
+
+    it('allows only one concurrent transition from pending', async () => {
+        const secondStart = new Date(initialStart.getTime() + 60 * 60 * 1000);
+        const secondAppointment = await appointmentsRepository.create({
+            clientId: 'client-2',
+            providerId: 'provider-1',
+            serviceId: 'service-1',
+            startTime: secondStart,
+            endTime: new Date(secondStart.getTime() + 30 * 60 * 1000),
+        });
+        const competingStart = new Date(initialStart.getTime() + 3 * 60 * 60 * 1000);
+        const results = await Promise.allSettled([
+            sut.execute({
+                appointmentId,
+                userId: 'client-1',
+                userRole: 'CLIENT',
+                startTime: competingStart,
+            }),
+            sut.execute({
+                appointmentId: secondAppointment.id,
+                userId: 'client-2',
+                userRole: 'CLIENT',
+                startTime: competingStart,
+            }),
+        ]);
+
+        expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+        expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+    });
 });

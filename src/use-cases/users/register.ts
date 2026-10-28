@@ -23,7 +23,7 @@ export class RegisterUseCase {
         password,
         phone,
     }: RegisterUseCaseRequest): Promise<RegisterUseCaseResponse> {
-        const passwordHash = await hash(password, 6);
+        const passwordHash = await hash(password, 10);
 
         const userWithSameEmail = await this.usersRepository.findByEmail(email);
 

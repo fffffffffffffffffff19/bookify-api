@@ -63,6 +63,28 @@ describe('Update Appointment Status Use Case', () => {
         expect(result.appointment.status).toEqual('CANCELLED');
     });
 
+    it('allows only one concurrent status transition from pending', async () => {
+        const appointment = await appointmentsRepository.create(appointmentData(new Date(Date.now() - 60_000)));
+        const results = await Promise.allSettled([
+            sut.execute({
+                appointmentId: appointment.id,
+                userId: 'provider-1',
+                userRole: 'PROVIDER',
+                status: 'COMPLETED',
+            }),
+            sut.execute({
+                appointmentId: appointment.id,
+                userId: 'provider-1',
+                userRole: 'PROVIDER',
+                status: 'CANCELLED',
+            }),
+        ]);
+
+        expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+        expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+        expect(appointment.status).not.toBe('PENDING');
+    });
+
     it.each([
         ['COMPLETED', 'PENDING'],
         ['COMPLETED', 'CANCELLED'],

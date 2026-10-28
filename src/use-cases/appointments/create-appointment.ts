@@ -30,6 +30,10 @@ export class CreateAppointmentUseCase {
         serviceId,
         startTime,
     }: CreateAppointmentUseCaseRequest): Promise<CreateAppointmentUseCaseResponse> {
+        if (startTime <= new Date()) {
+            throw new BusinessRuleError('Appointments must be scheduled in the future.', 'PAST_APPOINTMENT');
+        }
+
         const service = await this.servicesRepository.findById(serviceId);
 
         if (!service) {
