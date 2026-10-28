@@ -1,5 +1,5 @@
 import { Prisma, type Service } from '@prisma/client';
-import type { ServicesRepository } from '../services-repository.js';
+import type { PublicCatalogService, ServicesRepository } from '../services-repository.js';
 import { randomUUID } from 'node:crypto';
 
 export class InMemoryServicesRepository implements ServicesRepository {
@@ -12,6 +12,20 @@ export class InMemoryServicesRepository implements ServicesRepository {
 
     async findManyByUserId(userId: string): Promise<Service[]> {
         return this.items.filter((item) => item.userId === userId);
+    }
+
+    async findPublicCatalog(): Promise<PublicCatalogService[]> {
+        return this.items
+            .slice()
+            .sort((left, right) => left.title.localeCompare(right.title) || left.id.localeCompare(right.id))
+            .map((service) => ({
+                id: service.id,
+                title: service.title,
+                description: service.description,
+                price: service.price,
+                durationInMinutes: service.durationInMinutes,
+                provider: { id: service.userId, name: null },
+            }));
     }
 
     async create(data: Prisma.ServiceUncheckedCreateInput): Promise<Service> {

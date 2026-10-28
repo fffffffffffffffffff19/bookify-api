@@ -32,6 +32,6 @@ describe('Get User Profile Use Case', () => {
             sut.execute({
                 userId: 'non-existing-id',
             })
-        ).rejects.toThrow('Resource not found.');
+        ).rejects.toThrow('User not found.');
     });
 });

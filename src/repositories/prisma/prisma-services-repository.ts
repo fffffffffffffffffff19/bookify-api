@@ -1,6 +1,6 @@
 import { prisma } from '../../lib/prisma.js';
 import type { Prisma, Service } from '@prisma/client';
-import type { ServicesRepository } from '../services-repository.js';
+import type { PublicCatalogService, ServicesRepository } from '../services-repository.js';
 
 export class PrismaServicesRepository implements ServicesRepository {
     async create(data: Prisma.ServiceUncheckedCreateInput) {
@@ -19,6 +19,25 @@ export class PrismaServicesRepository implements ServicesRepository {
         });
 
         return services;
+    }
+
+    async findPublicCatalog(): Promise<PublicCatalogService[]> {
+        const services = await prisma.service.findMany({
+            orderBy: [{ title: 'asc' }, { id: 'asc' }],
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                price: true,
+                durationInMinutes: true,
+                user: { select: { id: true, name: true } },
+            },
+        });
+
+        return services.map(({ user, ...service }) => ({
+            ...service,
+            provider: user,
+        }));
     }
 
     async findById(id: string) {

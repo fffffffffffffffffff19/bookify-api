@@ -27,17 +27,25 @@ describe('Profile (E2E)', () => {
             password: '123456password',
         });
 
-        const { token } = authResponse.body;
+        const { token } = authResponse.body.data;
 
         const profileResponse = await request(app.server)
             .get('/me')
             .set('Authorization', `Bearer ${token}`);
 
         expect(profileResponse.status).toEqual(200);
-        expect(profileResponse.body.user).toEqual(
-            expect.objectContaining({
-                email,
-            }),
-        );
+        expect(profileResponse.body).toEqual({
+            data: {
+                user: expect.objectContaining({
+                    id: expect.any(String),
+                    name: 'John Doe',
+                    email,
+                    role: 'CLIENT',
+                    createdAt: expect.any(String),
+                }),
+            },
+        });
+        expect(profileResponse.body.data.user).not.toHaveProperty('passwordHash');
+        expect(profileResponse.body.data.user).not.toHaveProperty('phone');
     });
 });
