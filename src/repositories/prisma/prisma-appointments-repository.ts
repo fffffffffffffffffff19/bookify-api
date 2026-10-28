@@ -1,6 +1,9 @@
 import { prisma } from '../../lib/prisma.js';
 import type { Prisma, Appointment } from '@prisma/client';
-import type { AppointmentsRepository } from '../appointments-repository.js';
+import type {
+    AppointmentListFilters,
+    AppointmentsRepository,
+} from '../appointments-repository.js';
 
 export class PrismaAppointmentsRepository implements AppointmentsRepository {
     async create(data: Prisma.AppointmentUncheckedCreateInput) {
@@ -56,8 +59,19 @@ export class PrismaAppointmentsRepository implements AppointmentsRepository {
         return appointment;
     }
 
-    async findMany() {
-        return prisma.appointment.findMany();
+    async findMany(filters: AppointmentListFilters) {
+        const where = this.buildListWhere(filters);
+        const [appointments, total] = await prisma.$transaction([
+            prisma.appointment.findMany({
+                where,
+                skip: (filters.page - 1) * filters.perPage,
+                take: filters.perPage,
+                orderBy: [{ startTime: 'asc' }, { id: 'asc' }],
+            }),
+            prisma.appointment.count({ where }),
+        ]);
+
+        return { appointments, total };
     }
 
     async save(appointment: Appointment) {
@@ -71,17 +85,43 @@ export class PrismaAppointmentsRepository implements AppointmentsRepository {
         return updatedAppointment;
     }
 
-    async findManyByUserId(userId: string) {
-        const appointments = await prisma.appointment.findMany({
-            where: {
-                OR: [
-                    { clientId: userId },
-                    { providerId: userId },
-                ],
-            },
-        });
+    async findManyByUserId(userId: string, filters: AppointmentListFilters) {
+        const where: Prisma.AppointmentWhereInput = {
+            AND: [
+                {
+                    OR: [
+                        { clientId: userId },
+                        { providerId: userId },
+                    ],
+                },
+                this.buildListWhere(filters),
+            ],
+        };
+        const [appointments, total] = await prisma.$transaction([
+            prisma.appointment.findMany({
+                where,
+                skip: (filters.page - 1) * filters.perPage,
+                take: filters.perPage,
+                orderBy: [{ startTime: 'asc' }, { id: 'asc' }],
+            }),
+            prisma.appointment.count({ where }),
+        ]);
 
-        return appointments;
+        return { appointments, total };
+    }
+
+    private buildListWhere(filters: AppointmentListFilters): Prisma.AppointmentWhereInput {
+        return {
+            ...(filters.status ? { status: filters.status } : {}),
+            ...(filters.from || filters.to
+                ? {
+                    startTime: {
+                        ...(filters.from ? { gte: filters.from } : {}),
+                        ...(filters.to ? { lt: filters.to } : {}),
+                    },
+                }
+                : {}),
+        };
     }
 
     async findManyByProviderId(providerId: string) {

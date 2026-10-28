@@ -31,6 +31,7 @@ describe('Fetch Admin Appointments (E2E)', () => {
 
         expect(response.status).toEqual(200);
         expect(response.body.appointments).toEqual([]);
+        expect(response.body.pagination).toEqual({ page: 1, perPage: 20, total: 0, totalPages: 0 });
     });
 
     it('should reject clients from fetching all appointments', async () => {
@@ -51,5 +52,67 @@ describe('Fetch Admin Appointments (E2E)', () => {
             .set('Authorization', `Bearer ${auth.body.token}`);
 
         expect(response.status).toEqual(403);
+    });
+
+    it('should return the requested filtered page of appointments', async () => {
+        const suffix = randomUUID();
+        const adminEmail = `admin-${suffix}@example.com`;
+        const providerEmail = `provider-${suffix}@example.com`;
+        const clientEmail = `client-${suffix}@example.com`;
+        const password = '123456password';
+
+        await request(app.server).post('/users').send({
+            name: 'Admin User', email: adminEmail, password, role: 'ADMIN',
+        });
+        await request(app.server).post('/users').send({
+            name: 'Provider User', email: providerEmail, password, role: 'PROVIDER',
+        });
+        await request(app.server).post('/users').send({
+            name: 'Client User', email: clientEmail, password, role: 'CLIENT',
+        });
+        const providerAuth = await request(app.server).post('/sessions').send({ email: providerEmail, password });
+        const clientAuth = await request(app.server).post('/sessions').send({ email: clientEmail, password });
+        const adminAuth = await request(app.server).post('/sessions').send({ email: adminEmail, password });
+        await request(app.server)
+            .post('/services')
+            .set('Authorization', `Bearer ${providerAuth.body.token}`)
+            .send({ title: 'Consultation', price: 50, durationInMinutes: 30 });
+        const services = await request(app.server)
+            .get('/services')
+            .set('Authorization', `Bearer ${providerAuth.body.token}`);
+        const serviceId = services.body.services[0].id;
+
+        const date = new Date();
+        date.setDate(date.getDate() + 2);
+        while (date.getDay() === 0 || date.getDay() === 6) date.setDate(date.getDate() + 1);
+        date.setHours(10, 0, 0, 0);
+        const first = await request(app.server)
+            .post('/appointments')
+            .set('Authorization', `Bearer ${clientAuth.body.token}`)
+            .send({ serviceId, startTime: date.toISOString() });
+        const secondTime = new Date(date.getTime() + 60 * 60 * 1000);
+        const second = await request(app.server)
+            .post('/appointments')
+            .set('Authorization', `Bearer ${clientAuth.body.token}`)
+            .send({ serviceId, startTime: secondTime.toISOString() });
+
+        expect(first.status).toEqual(201);
+        expect(second.status).toEqual(201);
+
+        const response = await request(app.server)
+            .get('/admin/appointments')
+            .query({
+                page: 2,
+                perPage: 1,
+                status: 'PENDING',
+                from: date.toISOString(),
+                to: new Date(date.getTime() + 2 * 60 * 60 * 1000).toISOString(),
+            })
+            .set('Authorization', `Bearer ${adminAuth.body.token}`);
+
+        expect(response.status).toEqual(200);
+        expect(response.body.appointments).toHaveLength(1);
+        expect(response.body.appointments[0].id).toEqual(second.body.appointment.id);
+        expect(response.body.pagination).toEqual({ page: 2, perPage: 1, total: 2, totalPages: 2 });
     });
 });

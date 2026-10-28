@@ -1,12 +1,22 @@
-import type { AppointmentsRepository } from '../../repositories/appointments-repository.js';
+import type {
+    AppointmentListFilters,
+    AppointmentsRepository,
+} from '../../repositories/appointments-repository.js';
 import type { Appointment } from '@prisma/client';
 
 interface FetchUserAppointmentsUseCaseRequest {
     userId: string;
+    filters?: Partial<AppointmentListFilters>;
 }
 
 interface FetchUserAppointmentsUseCaseResponse {
     appointments: Appointment[];
+    pagination: {
+        page: number;
+        perPage: number;
+        total: number;
+        totalPages: number;
+    };
 }
 
 export class FetchUserAppointmentsUseCase {
@@ -14,11 +24,26 @@ export class FetchUserAppointmentsUseCase {
 
     async execute({
         userId,
+        filters = {},
     }: FetchUserAppointmentsUseCaseRequest): Promise<FetchUserAppointmentsUseCaseResponse> {
-        const appointments = await this.appointmentsRepository.findManyByUserId(userId);
+        const page = filters.page ?? 1;
+        const perPage = filters.perPage ?? 20;
+        const result = await this.appointmentsRepository.findManyByUserId(userId, {
+            page,
+            perPage,
+            status: filters.status,
+            from: filters.from,
+            to: filters.to,
+        });
 
         return {
-            appointments,
+            appointments: result.appointments,
+            pagination: {
+                page,
+                perPage,
+                total: result.total,
+                totalPages: Math.ceil(result.total / perPage),
+            },
         };
     }
 }

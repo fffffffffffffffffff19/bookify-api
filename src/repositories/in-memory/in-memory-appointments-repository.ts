@@ -1,5 +1,9 @@
 import type { Appointment, Prisma } from '@prisma/client';
-import type { AppointmentsRepository } from '../appointments-repository.js';
+import type {
+    AppointmentListFilters,
+    AppointmentsRepository,
+    PaginatedAppointments,
+} from '../appointments-repository.js';
 import { randomUUID } from 'node:crypto';
 
 export class InMemoryAppointmentsRepository implements AppointmentsRepository {
@@ -10,14 +14,37 @@ export class InMemoryAppointmentsRepository implements AppointmentsRepository {
         return appointment ?? null;
     }
 
-    async findMany(): Promise<Appointment[]> {
-        return this.items;
+    async findMany(filters: AppointmentListFilters): Promise<PaginatedAppointments> {
+        return this.filterAndPaginate(this.items, filters);
     }
 
-    async findManyByUserId(userId: string): Promise<Appointment[]> {
-        return this.items.filter(
-            (item) => item.clientId === userId || item.providerId === userId
+    async findManyByUserId(
+        userId: string,
+        filters: AppointmentListFilters,
+    ): Promise<PaginatedAppointments> {
+        return this.filterAndPaginate(
+            this.items.filter((item) => item.clientId === userId || item.providerId === userId),
+            filters,
         );
+    }
+
+    private filterAndPaginate(
+        appointments: Appointment[],
+        filters: AppointmentListFilters,
+    ): PaginatedAppointments {
+        const filtered = appointments
+            .filter((appointment) => !filters.status || appointment.status === filters.status)
+            .filter((appointment) => !filters.from || appointment.startTime >= filters.from)
+            .filter((appointment) => !filters.to || appointment.startTime < filters.to)
+            .sort((left, right) =>
+                left.startTime.getTime() - right.startTime.getTime() || left.id.localeCompare(right.id),
+            );
+        const offset = (filters.page - 1) * filters.perPage;
+
+        return {
+            appointments: filtered.slice(offset, offset + filters.perPage),
+            total: filtered.length,
+        };
     }
 
     async findManyByProviderId(providerId: string): Promise<Appointment[]> {

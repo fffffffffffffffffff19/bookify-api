@@ -80,5 +80,47 @@ describe('Fetch User Appointments (E2E)', () => {
 
         expect(response.status).toEqual(200);
         expect(response.body.appointments).toHaveLength(1);
+        expect(response.body.pagination).toEqual({ page: 1, perPage: 20, total: 1, totalPages: 1 });
+
+        const filteredResponse = await request(app.server)
+            .get('/appointments')
+            .query({
+                page: 1,
+                perPage: 1,
+                status: 'PENDING',
+                from: appointmentDate.toISOString(),
+                to: new Date(appointmentDate.getTime() + 60 * 60 * 1000).toISOString(),
+            })
+            .set('Authorization', `Bearer ${clientAuth.body.token}`);
+
+        expect(filteredResponse.status).toEqual(200);
+        expect(filteredResponse.body.appointments).toHaveLength(1);
+        expect(filteredResponse.body.pagination).toEqual({
+            page: 1,
+            perPage: 1,
+            total: 1,
+            totalPages: 1,
+        });
+    });
+
+    it('should reject invalid pagination and date-range query values', async () => {
+        const email = `client-${randomUUID()}@example.com`;
+        await request(app.server).post('/users').send({
+            name: 'Client User',
+            email,
+            password: '123456password',
+            role: 'CLIENT',
+        });
+        const auth = await request(app.server).post('/sessions').send({
+            email,
+            password: '123456password',
+        });
+
+        const response = await request(app.server)
+            .get('/appointments')
+            .query({ page: 0, perPage: 101, from: '2026-10-29T12:00:00.000Z', to: '2026-10-29T10:00:00.000Z' })
+            .set('Authorization', `Bearer ${auth.body.token}`);
+
+        expect(response.status).toEqual(400);
     });
 });
