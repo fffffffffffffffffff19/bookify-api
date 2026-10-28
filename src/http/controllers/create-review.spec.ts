@@ -2,6 +2,7 @@ import { app } from '../../app.js';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { provisionAndAuthenticate } from '../../test/e2e/provision-user.js';
+import { PrismaAppointmentsRepository } from '../../repositories/prisma/prisma-appointments-repository.js';
 
 async function createAppointmentFixture() {
     const provider = await provisionAndAuthenticate(app, 'PROVIDER');
@@ -30,6 +31,13 @@ async function createAppointmentFixture() {
 }
 
 async function completeAppointment(appointmentId: string, providerToken: string) {
+    const repository = new PrismaAppointmentsRepository();
+    const appointment = await repository.findById(appointmentId);
+    if (!appointment) throw new Error('Test appointment was not found.');
+    appointment.endTime = new Date(Date.now() - 60_000);
+    appointment.startTime = new Date(appointment.endTime.getTime() - 30 * 60 * 1000);
+    await repository.save(appointment);
+
     return request(app.server)
         .patch(`/appointments/${appointmentId}/status`)
         .set('Authorization', `Bearer ${providerToken}`)

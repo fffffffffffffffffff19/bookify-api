@@ -3,6 +3,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { provisionAndAuthenticate } from '../../test/e2e/provision-user.js';
+import { PrismaAppointmentsRepository } from '../../repositories/prisma/prisma-appointments-repository.js';
 
 async function createAppointmentFixture() {
     const providerAuth = await provisionAndAuthenticate(app, 'PROVIDER');
@@ -44,6 +45,16 @@ async function createAppointmentFixture() {
     };
 }
 
+async function setAppointmentEndTimeInPast(appointmentId: string) {
+    const repository = new PrismaAppointmentsRepository();
+    const appointment = await repository.findById(appointmentId);
+    if (!appointment) throw new Error('Test appointment was not found.');
+
+    appointment.endTime = new Date(Date.now() - 60_000);
+    appointment.startTime = new Date(appointment.endTime.getTime() - 30 * 60 * 1000);
+    await repository.save(appointment);
+}
+
 describe('Provider Appointment Routes (E2E)', () => {
     beforeAll(async () => {
         await app.ready();
@@ -75,29 +86,58 @@ describe('Provider Appointment Routes (E2E)', () => {
         expect(response.status).toEqual(403);
     });
 
-    it('should allow the appointment provider to update its status', async () => {
-        const { providerToken, appointmentId } = await createAppointmentFixture();
+    it('should allow a client to cancel their own pending appointment', async () => {
+        const { clientToken, appointmentId } = await createAppointmentFixture();
+
+        const response = await request(app.server)
+            .patch(`/appointments/${appointmentId}/status`)
+            .set('Authorization', `Bearer ${clientToken}`)
+            .send({ status: 'CANCELLED' });
+
+        expect(response.status).toEqual(200);
+        expect(response.body.data.appointment.status).toEqual('CANCELLED');
+    });
+
+    it('should allow the provider to complete a pending appointment after its end time', async () => {
+        const { appointmentId, providerToken } = await createAppointmentFixture();
+        await setAppointmentEndTimeInPast(appointmentId);
 
         const response = await request(app.server)
             .patch(`/appointments/${appointmentId}/status`)
             .set('Authorization', `Bearer ${providerToken}`)
-            .send({ status: 'CONFIRMED' });
-
-        expect(response.status).toEqual(200);
-        expect(response.body.data.appointment.status).toEqual('CONFIRMED');
-    });
-
-    it('should allow admins to update appointment status', async () => {
-        const { appointmentId } = await createAppointmentFixture();
-        const auth = await provisionAndAuthenticate(app, 'ADMIN');
-
-        const response = await request(app.server)
-            .patch(`/appointments/${appointmentId}/status`)
-            .set('Authorization', `Bearer ${auth.token}`)
             .send({ status: 'COMPLETED' });
 
         expect(response.status).toEqual(200);
         expect(response.body.data.appointment.status).toEqual('COMPLETED');
+    });
+
+    it('should reject admin completion before the appointment end time', async () => {
+        const { appointmentId } = await createAppointmentFixture();
+        const admin = await provisionAndAuthenticate(app, 'ADMIN');
+
+        const response = await request(app.server)
+            .patch(`/appointments/${appointmentId}/status`)
+            .set('Authorization', `Bearer ${admin.token}`)
+            .send({ status: 'COMPLETED' });
+
+        expect(response.status).toEqual(400);
+        expect(response.body.errorCode).toEqual('APPOINTMENT_NOT_FINISHED');
+    });
+
+    it('should reject status mutations after an appointment becomes terminal', async () => {
+        const { appointmentId, providerToken } = await createAppointmentFixture();
+        const cancelled = await request(app.server)
+            .patch(`/appointments/${appointmentId}/status`)
+            .set('Authorization', `Bearer ${providerToken}`)
+            .send({ status: 'CANCELLED' });
+        const mutation = await request(app.server)
+            .patch(`/appointments/${appointmentId}/status`)
+            .set('Authorization', `Bearer ${providerToken}`)
+            .send({ status: 'COMPLETED' });
+
+        expect(cancelled.status).toEqual(200);
+        expect(mutation.status).toEqual(400);
+        expect(mutation.body.errorCode).toEqual('INVALID_STATUS_TRANSITION');
     });
 
     it('should return 403 to clients and providers who do not own an appointment', async () => {
@@ -105,13 +145,13 @@ describe('Provider Appointment Routes (E2E)', () => {
         const otherProviderAuth = await provisionAndAuthenticate(app, 'PROVIDER');
 
         const forbidden = await request(app.server)
-            .patch(`/appointments/${randomUUID()}/status`)
+            .patch(`/appointments/${appointmentId}/status`)
             .set('Authorization', `Bearer ${clientToken}`)
-            .send({ status: 'CONFIRMED' });
+            .send({ status: 'COMPLETED' });
         const forbiddenProvider = await request(app.server)
             .patch(`/appointments/${appointmentId}/status`)
             .set('Authorization', `Bearer ${otherProviderAuth.token}`)
-            .send({ status: 'CONFIRMED' });
+            .send({ status: 'CANCELLED' });
         expect(forbidden.status).toEqual(403);
         expect(forbiddenProvider.status).toEqual(403);
     });
@@ -121,7 +161,7 @@ describe('Provider Appointment Routes (E2E)', () => {
         const notFound = await request(app.server)
             .patch(`/appointments/${randomUUID()}/status`)
             .set('Authorization', `Bearer ${providerToken}`)
-            .send({ status: 'CONFIRMED' });
+            .send({ status: 'CANCELLED' });
 
         expect(notFound.status).toEqual(404);
     });

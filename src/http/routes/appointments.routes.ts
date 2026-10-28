@@ -27,7 +27,6 @@ export async function appointmentsRoutes(app: FastifyInstance) {
     app.post('/appointments/:id/review', createReview);
     app.patch(
         '/appointments/:id/status',
-        { onRequest: [verifyUserRole(['ADMIN', 'PROVIDER'])] },
         updateAppointmentStatus,
     );
 }

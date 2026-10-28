@@ -5,22 +5,16 @@ import { makeUpdateAppointmentStatusUseCase } from '../../use-cases/factories/ma
 export async function updateAppointmentStatus(request: FastifyRequest, reply: FastifyReply) {
     const paramsSchema = z.object({ id: z.string().uuid() });
     const bodySchema = z.object({
-        status: z.enum(['CONFIRMED', 'COMPLETED', 'CANCELLED']),
+        status: z.enum(['PENDING', 'COMPLETED', 'CANCELLED']),
     });
     const { id } = paramsSchema.parse(request.params);
     const { status } = bodySchema.parse(request.body);
-    const userRole = request.user.role;
-
-    if (userRole !== 'ADMIN' && userRole !== 'PROVIDER') {
-        return reply.status(403).send({ message: 'Not authorized.', errorCode: 'FORBIDDEN' });
-    }
-
     const useCase = makeUpdateAppointmentStatusUseCase();
 
     const { appointment } = await useCase.execute({
         appointmentId: id,
         userId: request.user.sub,
-        userRole,
+        userRole: request.user.role,
         status,
     });
 
