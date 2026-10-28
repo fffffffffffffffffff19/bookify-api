@@ -101,7 +101,7 @@ describe('Cancel Appointment Use Case', () => {
                 appointmentId: createdAppointment.id,
                 userId: 'client-1',
             })
-        ).rejects.toThrow('Appointment is already cancelled.');
+        ).rejects.toThrow('Appointments in CANCELLED status cannot transition to CANCELLED.');
     });
 
     it('should not be able to cancel a past appointment', async () => {

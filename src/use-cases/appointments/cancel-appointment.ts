@@ -28,8 +28,11 @@ export class CancelAppointmentUseCase {
             throw new ForbiddenError();
         }
 
-        if (appointment.status === 'CANCELLED') {
-            throw new BusinessRuleError('Appointment is already cancelled.', 'APPOINTMENT_ALREADY_CANCELLED');
+        if (appointment.status !== 'PENDING') {
+            throw new BusinessRuleError(
+                `Appointments in ${appointment.status} status cannot transition to CANCELLED.`,
+                'INVALID_STATUS_TRANSITION',
+            );
         }
 
         if (appointment.startTime < new Date()) {

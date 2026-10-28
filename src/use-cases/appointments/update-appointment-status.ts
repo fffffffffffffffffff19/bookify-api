@@ -1,12 +1,16 @@
 import type { Appointment } from '@prisma/client';
 import type { AppointmentsRepository } from '../../repositories/appointments-repository.js';
-import { ForbiddenError, ResourceNotFoundError } from '../../errors/application-error.js';
+import {
+    BusinessRuleError,
+    ForbiddenError,
+    ResourceNotFoundError,
+} from '../../errors/application-error.js';
 
 interface UpdateAppointmentStatusUseCaseRequest {
     appointmentId: string;
     userId: string;
-    userRole: 'PROVIDER' | 'ADMIN';
-    status: 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+    userRole: 'CLIENT' | 'PROVIDER' | 'ADMIN';
+    status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
 }
 
 interface UpdateAppointmentStatusUseCaseResponse {
@@ -40,8 +44,37 @@ export class UpdateAppointmentStatusUseCase {
             throw new AppointmentNotFoundError();
         }
 
-        if (userRole !== 'ADMIN' && appointment.providerId !== userId) {
+        const isAuthorized =
+            userRole === 'ADMIN' ||
+            (userRole === 'CLIENT' && appointment.clientId === userId) ||
+            (userRole === 'PROVIDER' && appointment.providerId === userId);
+        if (!isAuthorized) {
             throw new UnauthorizedAppointmentAccessError();
+        }
+
+        if (appointment.status !== 'PENDING') {
+            throw new BusinessRuleError(
+                `Appointments in ${appointment.status} status cannot transition to another status.`,
+                'INVALID_STATUS_TRANSITION',
+            );
+        }
+
+        if (status === 'PENDING') {
+            throw new BusinessRuleError(
+                'Appointments cannot transition back to PENDING.',
+                'INVALID_STATUS_TRANSITION',
+            );
+        }
+
+        if (userRole === 'CLIENT' && status !== 'CANCELLED') {
+            throw new ForbiddenError('Clients may only cancel their own pending appointments.');
+        }
+
+        if (status === 'COMPLETED' && appointment.endTime > new Date()) {
+            throw new BusinessRuleError(
+                'An appointment cannot be completed before its scheduled end time.',
+                'APPOINTMENT_NOT_FINISHED',
+            );
         }
 
         appointment.status = status;
