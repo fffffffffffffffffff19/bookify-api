@@ -51,7 +51,7 @@ describe('Authenticate (E2E)', () => {
     it('should return a standardized validation error envelope', async () => {
         const response = await request(app.server).post('/sessions').send({ email: 'not-an-email' });
 
-        expect(response.status).toEqual(400);
+        expect(response.status, JSON.stringify(response.body)).toEqual(400);
         expect(response.body).toMatchObject({
             message: 'Validation error.',
             errorCode: 'VALIDATION_ERROR',
