@@ -1,6 +1,5 @@
 import { fastify } from 'fastify';
 import fastifyJwt from '@fastify/jwt';
-import { prisma } from './lib/prisma.js';
 import { userRoutes } from './http/routes/users.routes.js';
 import { servicesRoutes } from './http/routes/services.routes.js';
 import { appointmentsRoutes } from './http/routes/appointments.routes.js';

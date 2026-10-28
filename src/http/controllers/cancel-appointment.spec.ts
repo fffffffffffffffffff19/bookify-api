@@ -60,7 +60,6 @@ describe('Cancel Appointment (E2E)', () => {
         const appointmentDate = new Date();
         appointmentDate.setDate(appointmentDate.getDate() + 2);
 
-        // Garante que não cai em fim de semana (0 = Domingo, 6 = Sábado)
         while (appointmentDate.getDay() === 0 || appointmentDate.getDay() === 6) {
             appointmentDate.setDate(appointmentDate.getDate() + 1);
         }
