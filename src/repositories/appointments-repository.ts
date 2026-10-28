@@ -4,6 +4,7 @@ export interface AppointmentsRepository {
     findById(id: string): Promise<Appointment | null>;
     findMany(): Promise<Appointment[]>;
     findManyByUserId(userId: string): Promise<Appointment[]>;
+    findManyByProviderId(providerId: string): Promise<Appointment[]>;
     findByServiceAndDate(serviceId: string, date: Date): Promise<Appointment | null>;
     findConflictingAppointment(
         providerId: string,

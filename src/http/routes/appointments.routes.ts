@@ -5,6 +5,8 @@ import { createAppointment } from '../controllers/create-appointment.js';
 import { fetchUserAppointments } from '../controllers/fetch-user-appointments.js';
 import { fetchAdminAppointments } from '../controllers/fetch-admin-appointments.js';
 import { cancelAppointment } from '../controllers/cancel-appointment.js';
+import { updateAppointmentStatus } from '../controllers/update-appointment-status.js';
+import { fetchProviderAppointments } from '../controllers/fetch-provider-appointments.js';
 
 export async function appointmentsRoutes(app: FastifyInstance) {
     app.addHook('onRequest', verifyJWT);
@@ -13,5 +15,15 @@ export async function appointmentsRoutes(app: FastifyInstance) {
 
     app.get('/appointments', fetchUserAppointments);
     app.get('/admin/appointments', { onRequest: [verifyUserRole('ADMIN')] }, fetchAdminAppointments);
+    app.get(
+        '/provider/appointments',
+        { onRequest: [verifyUserRole(['PROVIDER', 'ADMIN'])] },
+        fetchProviderAppointments,
+    );
     app.patch('/appointments/:id/cancel', cancelAppointment);
+    app.patch(
+        '/appointments/:id/status',
+        { onRequest: [verifyUserRole(['ADMIN', 'PROVIDER'])] },
+        updateAppointmentStatus,
+    );
 }

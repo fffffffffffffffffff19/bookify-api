@@ -83,4 +83,10 @@ export class PrismaAppointmentsRepository implements AppointmentsRepository {
 
         return appointments;
     }
+
+    async findManyByProviderId(providerId: string) {
+        return prisma.appointment.findMany({
+            where: { providerId },
+        });
+    }
 }
