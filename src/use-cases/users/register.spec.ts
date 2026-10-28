@@ -24,6 +24,19 @@ describe('Register Use Case', () => {
         expect(user.role).toEqual('CLIENT');
     });
 
+    it('should always register public signups as clients despite extra runtime role data', async () => {
+        const request = {
+            name: 'Admin Attempt',
+            email: 'admin-attempt@example.com',
+            password: '123456',
+            role: 'ADMIN',
+        };
+
+        const { user } = await sut.execute(request);
+
+        expect(user.role).toEqual('CLIENT');
+    });
+
     it('should hash user password upon registration', async () => {
         const { user } = await sut.execute({
             name: 'John Doe',

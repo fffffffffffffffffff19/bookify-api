@@ -8,10 +8,9 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
         email: z.string().email(),
         password: z.string().min(6),
         phone: z.string().optional(),
-        role: z.enum(['CLIENT', 'PROVIDER', 'ADMIN']).optional(),
     });
 
-    const { name, email, password, phone, role } = registerBodySchema.parse(request.body);
+    const { name, email, password, phone } = registerBodySchema.parse(request.body);
 
     try {
         const registerUseCase = makeRegisterUseCase();
@@ -21,7 +20,6 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
             email,
             password,
             ...(phone ? { phone } : {}),
-            ...(role ? { role } : {}),
         });
     } catch (err: any) {
         if (err.message === 'E-mail already exists.') {

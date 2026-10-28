@@ -26,4 +26,26 @@ describe('Register (E2E)', () => {
 
         expect(response.status).toEqual(201);
     });
+
+    it('should ignore a requested privileged role during public registration', async () => {
+        const email = `admin-attempt-${randomUUID()}@example.com`;
+        const registration = await request(app.server)
+            .post('/users')
+            .send({
+                name: 'Admin Attempt',
+                email,
+                password: '123456password',
+                role: 'ADMIN',
+            });
+        const authentication = await request(app.server)
+            .post('/sessions')
+            .send({ email, password: '123456password' });
+        const profile = await request(app.server)
+            .get('/me')
+            .set('Authorization', `Bearer ${authentication.body.token}`);
+
+        expect(registration.status).toEqual(201);
+        expect(profile.status).toEqual(200);
+        expect(profile.body.user.role).toEqual('CLIENT');
+    });
 });
