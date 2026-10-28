@@ -98,6 +98,24 @@ describe('Provider Appointment Routes (E2E)', () => {
         expect(response.body.data.appointment.status).toEqual('CANCELLED');
     });
 
+    it('should allow only one concurrent status transition from pending', async () => {
+        const { clientToken, appointmentId } = await createAppointmentFixture();
+        const responses = await Promise.all([
+            request(app.server)
+                .patch(`/appointments/${appointmentId}/status`)
+                .set('Authorization', `Bearer ${clientToken}`)
+                .send({ status: 'CANCELLED' }),
+            request(app.server)
+                .patch(`/appointments/${appointmentId}/status`)
+                .set('Authorization', `Bearer ${clientToken}`)
+                .send({ status: 'CANCELLED' }),
+        ]);
+
+        expect(responses.filter((response) => response.status === 200)).toHaveLength(1);
+        expect(responses.filter((response) => response.status !== 200)).toHaveLength(1);
+        expect([400, 409]).toContain(responses.find((response) => response.status !== 200)?.status);
+    });
+
     it('should allow the provider to complete a pending appointment after its end time', async () => {
         const { appointmentId, providerToken } = await createAppointmentFixture();
         await setAppointmentEndTimeInPast(appointmentId);

@@ -6,7 +6,7 @@ const updateProfileBodySchema = z.object({
     name: z.string().min(2).optional(),
     email: z.string().email().optional(),
     oldPassword: z.string().min(6).optional(),
-    newPassword: z.string().min(6).optional(),
+    newPassword: z.string().min(8).optional(),
 }).refine((body) => body.newPassword === undefined || body.oldPassword !== undefined, {
     message: 'oldPassword is required when changing the password.',
     path: ['oldPassword'],

@@ -48,4 +48,13 @@ describe('Register (E2E)', () => {
         expect(profile.status).toEqual(200);
         expect(profile.body.data.user.role).toEqual('CLIENT');
     });
+
+    it('rejects passwords shorter than eight characters', async () => {
+        const response = await request(app.server)
+            .post('/users')
+            .send({ name: 'Short Password', email: `short-${randomUUID()}@example.com`, password: 'short7' });
+
+        expect(response.status).toEqual(400);
+        expect(response.body.errorCode).toEqual('VALIDATION_ERROR');
+    });
 });

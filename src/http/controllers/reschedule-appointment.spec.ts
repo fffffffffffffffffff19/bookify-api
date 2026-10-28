@@ -79,6 +79,34 @@ describe('Reschedule Appointment (E2E)', () => {
         expect(response.body.errorCode).toEqual('BOOKING_CONFLICT');
     });
 
+    it('does not allow concurrent reschedules to double-book a provider slot', async () => {
+        const fixture = await createBookingFixture();
+        const competingStart = new Date(fixture.startTime.getTime() + 2 * 60 * 60 * 1000).toISOString();
+        const responses = await Promise.all([
+            request(app.server)
+                .patch(`/appointments/${fixture.appointmentId}/reschedule`)
+                .set('Authorization', `Bearer ${fixture.clientToken}`)
+                .send({ startTime: competingStart }),
+            request(app.server)
+                .patch(`/appointments/${fixture.otherAppointmentId}/reschedule`)
+                .set('Authorization', `Bearer ${fixture.otherClientToken}`)
+                .send({ startTime: competingStart }),
+        ]);
+
+        expect(responses.map((response) => response.status).sort()).toEqual([200, 409]);
+    });
+
+    it('rejects rescheduling to a time in the past', async () => {
+        const fixture = await createBookingFixture();
+        const response = await request(app.server)
+            .patch(`/appointments/${fixture.appointmentId}/reschedule`)
+            .set('Authorization', `Bearer ${fixture.clientToken}`)
+            .send({ startTime: new Date(Date.now() - 60_000).toISOString() });
+
+        expect(response.status).toEqual(400);
+        expect(response.body.errorCode).toEqual('PAST_APPOINTMENT');
+    });
+
     it('rejects unauthenticated, unauthorized, and missing-appointment requests', async () => {
         const fixture = await createBookingFixture();
         const newStartTime = new Date(fixture.startTime.getTime() + 2 * 60 * 60 * 1000).toISOString();

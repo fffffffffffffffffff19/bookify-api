@@ -112,4 +112,25 @@ describe('Profile (E2E)', () => {
             errorCode: 'VALIDATION_ERROR',
         });
     });
+
+    it('rejects a new password shorter than eight characters', async () => {
+        const email = `short-password-${randomUUID()}@example.com`;
+        await request(app.server).post('/users').send({
+            name: 'Password User',
+            email,
+            password: '123456password',
+        });
+        const authResponse = await request(app.server).post('/sessions').send({
+            email,
+            password: '123456password',
+        });
+
+        const response = await request(app.server)
+            .patch('/me')
+            .set('Authorization', `Bearer ${authResponse.body.data.token}`)
+            .send({ oldPassword: '123456password', newPassword: 'short7' });
+
+        expect(response.status).toEqual(400);
+        expect(response.body.errorCode).toEqual('VALIDATION_ERROR');
+    });
 });
