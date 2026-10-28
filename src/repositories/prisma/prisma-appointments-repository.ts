@@ -56,6 +56,10 @@ export class PrismaAppointmentsRepository implements AppointmentsRepository {
         return appointment;
     }
 
+    async findMany() {
+        return prisma.appointment.findMany();
+    }
+
     async save(appointment: Appointment) {
         const updatedAppointment = await prisma.appointment.update({
             where: {

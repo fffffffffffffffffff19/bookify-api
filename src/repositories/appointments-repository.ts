@@ -2,6 +2,7 @@ import type { Appointment, Prisma } from '@prisma/client';
 
 export interface AppointmentsRepository {
     findById(id: string): Promise<Appointment | null>;
+    findMany(): Promise<Appointment[]>;
     findManyByUserId(userId: string): Promise<Appointment[]>;
     findByServiceAndDate(serviceId: string, date: Date): Promise<Appointment | null>;
     findConflictingAppointment(

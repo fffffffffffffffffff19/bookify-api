@@ -10,6 +10,10 @@ export class InMemoryAppointmentsRepository implements AppointmentsRepository {
         return appointment ?? null;
     }
 
+    async findMany(): Promise<Appointment[]> {
+        return this.items;
+    }
+
     async findManyByUserId(userId: string): Promise<Appointment[]> {
         return this.items.filter(
             (item) => item.clientId === userId || item.providerId === userId
