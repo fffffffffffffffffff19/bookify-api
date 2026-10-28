@@ -114,4 +114,49 @@ describe('Create Appointment (E2E)', () => {
         );
         expect(noLongerConflicting).toBeNull();
     });
+
+    it('should allow only one of two concurrent requests to book a provider slot', async () => {
+        const providerAuth = await provisionAndAuthenticate(app, 'PROVIDER');
+        const clientOne = await provisionAndAuthenticate(app, 'CLIENT');
+        const clientTwo = await provisionAndAuthenticate(app, 'CLIENT');
+        await request(app.server)
+            .post('/services')
+            .set('Authorization', `Bearer ${providerAuth.token}`)
+            .send({ title: 'Concurrency Test Service', price: 45, durationInMinutes: 30 });
+        const services = await request(app.server)
+            .get('/services')
+            .set('Authorization', `Bearer ${providerAuth.token}`);
+        const serviceId = services.body.data.services[0].id as string;
+
+        const startTime = new Date();
+        startTime.setDate(startTime.getDate() + 2);
+        while (startTime.getDay() === 0 || startTime.getDay() === 6) {
+            startTime.setDate(startTime.getDate() + 1);
+        }
+        startTime.setHours(11, 0, 0, 0);
+
+        const [responseOne, responseTwo] = await Promise.all([
+            request(app.server)
+                .post('/appointments')
+                .set('Authorization', `Bearer ${clientOne.token}`)
+                .send({ serviceId, startTime: startTime.toISOString() }),
+            request(app.server)
+                .post('/appointments')
+                .set('Authorization', `Bearer ${clientTwo.token}`)
+                .send({ serviceId, startTime: startTime.toISOString() }),
+        ]);
+
+        const statuses = [responseOne.status, responseTwo.status].sort();
+        expect(statuses).toEqual([201, 409]);
+        const providerProfile = await request(app.server)
+            .get('/me')
+            .set('Authorization', `Bearer ${providerAuth.token}`);
+        const appointmentsRepository = new PrismaAppointmentsRepository();
+        const providerAppointments = await appointmentsRepository.findManyByProviderId(
+            providerProfile.body.data.user.id,
+        );
+
+        expect(providerAppointments).toHaveLength(1);
+        expect(providerAppointments[0]?.startTime).toEqual(startTime);
+    });
 });
