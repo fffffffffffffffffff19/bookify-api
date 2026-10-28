@@ -63,17 +63,7 @@ export class CreateAppointmentUseCase {
             );
         }
 
-        const conflictingAppointment = await this.appointmentsRepository.findConflictingAppointment(
-            service.userId,
-            startTime,
-            endTime,
-        );
-
-        if (conflictingAppointment) {
-            throw new ResourceConflictError('This time slot is already booked.', 'BOOKING_CONFLICT');
-        }
-
-        const appointment = await this.appointmentsRepository.create({
+        const appointment = await this.appointmentsRepository.createIfNoConflict({
             clientId,
             providerId: service.userId,
             serviceId,
@@ -81,6 +71,10 @@ export class CreateAppointmentUseCase {
             endTime,
             status: 'PENDING',
         });
+
+        if (!appointment) {
+            throw new ResourceConflictError('This time slot is already booked.', 'BOOKING_CONFLICT');
+        }
 
         return {
             appointment,

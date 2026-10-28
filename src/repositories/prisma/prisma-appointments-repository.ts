@@ -1,5 +1,5 @@
 import { prisma } from '../../lib/prisma.js';
-import type { Prisma, Appointment } from '@prisma/client';
+import { Prisma, type Appointment } from '@prisma/client';
 import type {
     AppointmentListFilters,
     AppointmentsRepository,
@@ -12,6 +12,44 @@ export class PrismaAppointmentsRepository implements AppointmentsRepository {
         });
 
         return appointment;
+    }
+
+    async createIfNoConflict(data: Prisma.AppointmentUncheckedCreateInput) {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            try {
+                return await prisma.$transaction(async (transaction) => {
+                    const conflict = await transaction.appointment.findFirst({
+                        where: {
+                            providerId: data.providerId,
+                            status: { not: 'CANCELLED' },
+                            startTime: { lt: new Date(data.endTime) },
+                            endTime: { gt: new Date(data.startTime) },
+                        },
+                        select: { id: true },
+                    });
+
+                    if (conflict) {
+                        return null;
+                    }
+
+                    return transaction.appointment.create({ data });
+                }, {
+                    isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+                });
+            } catch (error) {
+                const isSerializationConflict =
+                    typeof error === 'object' &&
+                    error !== null &&
+                    'code' in error &&
+                    error.code === 'P2034';
+
+                if (!isSerializationConflict || attempt === 2) {
+                    throw error;
+                }
+            }
+        }
+
+        return null;
     }
 
     async findByServiceAndDate(serviceId: string, startTime: Date) {

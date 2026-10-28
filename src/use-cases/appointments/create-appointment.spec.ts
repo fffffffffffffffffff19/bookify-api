@@ -3,6 +3,7 @@ import { CreateAppointmentUseCase } from './create-appointment.js';
 import { InMemoryAppointmentsRepository } from '../../repositories/in-memory/in-memory-appointments-repository.js';
 import { InMemoryServicesRepository } from '../../repositories/in-memory/in-memory-services-repository.js';
 import { InMemoryBusinessHoursRepository } from '../../repositories/in-memory/in-memory-business-hours-repository.js';
+import { ResourceConflictError } from '../../errors/application-error.js';
 
 let appointmentsRepository: InMemoryAppointmentsRepository;
 let servicesRepository: InMemoryServicesRepository;
@@ -125,6 +126,28 @@ describe('Create Appointment Use Case', () => {
             serviceId: 'service-2',
             startTime,
         })).rejects.toThrow('This time slot is already booked.');
+    });
+
+    it('should atomically reject concurrent bookings for the same provider slot', async () => {
+        const startTime = new Date();
+        startTime.setDate(startTime.getDate() + 2);
+        while (startTime.getDay() === 0 || startTime.getDay() === 6) {
+            startTime.setDate(startTime.getDate() + 1);
+        }
+        startTime.setHours(14, 0, 0, 0);
+
+        const results = await Promise.allSettled([
+            sut.execute({ clientId: 'client-1', serviceId: 'service-1', startTime }),
+            sut.execute({ clientId: 'client-2', serviceId: 'service-1', startTime }),
+        ]);
+
+        expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+        const rejected = results.find((result) => result.status === 'rejected');
+        expect(rejected?.status).toBe('rejected');
+        if (rejected?.status === 'rejected') {
+            expect(rejected.reason).toBeInstanceOf(ResourceConflictError);
+        }
+        expect(appointmentsRepository.items).toHaveLength(1);
     });
 
     it('should allow a slot when the existing provider appointment is cancelled', async () => {

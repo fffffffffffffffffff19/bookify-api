@@ -113,6 +113,26 @@ export class InMemoryAppointmentsRepository implements AppointmentsRepository {
         return appointment;
     }
 
+    async createIfNoConflict(
+        data: Prisma.AppointmentUncheckedCreateInput,
+    ): Promise<Appointment | null> {
+        const startTime = new Date(data.startTime);
+        const endTime = new Date(data.endTime);
+        const conflict = this.items.some(
+            (item) =>
+                item.providerId === data.providerId &&
+                item.status !== 'CANCELLED' &&
+                item.startTime < endTime &&
+                item.endTime > startTime,
+        );
+
+        if (conflict) {
+            return null;
+        }
+
+        return this.create(data);
+    }
+
     async save(appointment: Appointment): Promise<Appointment> {
         const index = this.items.findIndex((item) => item.id === appointment.id);
 

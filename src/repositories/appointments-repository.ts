@@ -31,5 +31,6 @@ export interface AppointmentsRepository {
         excludeAppointmentId?: string,
     ): Promise<Appointment | null>;
     create(data: Prisma.AppointmentUncheckedCreateInput): Promise<Appointment>;
+    createIfNoConflict(data: Prisma.AppointmentUncheckedCreateInput): Promise<Appointment | null>;
     save(appointment: Appointment): Promise<Appointment>;
 }
