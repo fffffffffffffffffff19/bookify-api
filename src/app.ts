@@ -1,5 +1,6 @@
 import fastify, { type FastifyServerOptions } from 'fastify';
 import fastifyJwt from '@fastify/jwt';
+import rateLimit from '@fastify/rate-limit';
 import Sentry from '@sentry/node';
 import { ZodError } from 'zod';
 import { env } from './config/env.js';
@@ -14,6 +15,19 @@ export function buildApp(options: FastifyServerOptions = {}) {
 
     app.register(fastifyJwt, {
         secret: env.JWT_SECRET,
+    });
+
+    app.register(rateLimit, {
+        global: true,
+        max: 100,
+        timeWindow: '1 minute',
+        errorResponseBuilder: (_request, context) => ({
+            statusCode: 429,
+            error: {
+                code: 'TOO_MANY_REQUESTS',
+                message: `Rate limit exceeded. Retry in ${context.after}.`,
+            },
+        }),
     });
 
     app.get('/health', async () => ({ status: 'ok' }));
@@ -57,6 +71,21 @@ export function buildApp(options: FastifyServerOptions = {}) {
                     errorCode: 'VALIDATION_ERROR',
                     issues: error.issues,
                 });
+        }
+
+        if (
+            ('statusCode' in error && error.statusCode === 429) ||
+            ('code' in error && error.code === 'FST_ERR_RATE_LIMIT')
+        ) {
+            const rateLimitError = 'error' in error && typeof error.error === 'object' && error.error !== null
+                ? error.error as { code?: string; message?: string }
+                : undefined;
+            return reply.status(429).send({
+                error: {
+                    code: rateLimitError?.code ?? 'TOO_MANY_REQUESTS',
+                    message: rateLimitError?.message ?? error.message ?? 'Rate limit exceeded. Please try again later.',
+                },
+            });
         }
 
         if (error instanceof ApplicationError) {
