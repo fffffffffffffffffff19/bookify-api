@@ -30,7 +30,7 @@ describe('Fetch User Appointments (E2E)', () => {
             .get('/services')
             .set('Authorization', `Bearer ${providerAuth.token}`);
 
-        const serviceId = servicesList.body.services[0].id;
+        const serviceId = servicesList.body.data.services[0].id;
 
         const clientEmail = `client-${randomUUID()}@example.com`;
 
@@ -57,7 +57,7 @@ describe('Fetch User Appointments (E2E)', () => {
 
         await request(app.server)
             .post('/appointments')
-            .set('Authorization', `Bearer ${clientAuth.body.token}`)
+            .set('Authorization', `Bearer ${clientAuth.body.data.token}`)
             .send({
                 serviceId,
                 startTime: appointmentDate.toISOString(),
@@ -65,11 +65,11 @@ describe('Fetch User Appointments (E2E)', () => {
 
         const response = await request(app.server)
             .get('/appointments')
-            .set('Authorization', `Bearer ${clientAuth.body.token}`);
+            .set('Authorization', `Bearer ${clientAuth.body.data.token}`);
 
         expect(response.status).toEqual(200);
-        expect(response.body.appointments).toHaveLength(1);
-        expect(response.body.pagination).toEqual({ page: 1, perPage: 20, total: 1, totalPages: 1 });
+        expect(response.body.data.appointments).toHaveLength(1);
+        expect(response.body.data.pagination).toEqual({ page: 1, perPage: 20, total: 1, totalPages: 1 });
 
         const filteredResponse = await request(app.server)
             .get('/appointments')
@@ -80,11 +80,11 @@ describe('Fetch User Appointments (E2E)', () => {
                 from: appointmentDate.toISOString(),
                 to: new Date(appointmentDate.getTime() + 60 * 60 * 1000).toISOString(),
             })
-            .set('Authorization', `Bearer ${clientAuth.body.token}`);
+            .set('Authorization', `Bearer ${clientAuth.body.data.token}`);
 
         expect(filteredResponse.status).toEqual(200);
-        expect(filteredResponse.body.appointments).toHaveLength(1);
-        expect(filteredResponse.body.pagination).toEqual({
+        expect(filteredResponse.body.data.appointments).toHaveLength(1);
+        expect(filteredResponse.body.data.pagination).toEqual({
             page: 1,
             perPage: 1,
             total: 1,
@@ -108,7 +108,7 @@ describe('Fetch User Appointments (E2E)', () => {
         const response = await request(app.server)
             .get('/appointments')
             .query({ page: 0, perPage: 101, from: '2026-10-29T12:00:00.000Z', to: '2026-10-29T10:00:00.000Z' })
-            .set('Authorization', `Bearer ${auth.body.token}`);
+            .set('Authorization', `Bearer ${auth.body.data.token}`);
 
         expect(response.status).toEqual(400);
     });

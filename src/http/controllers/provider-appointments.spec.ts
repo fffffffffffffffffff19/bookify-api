@@ -33,12 +33,12 @@ async function createAppointmentFixture() {
         .post('/appointments')
         .set('Authorization', `Bearer ${clientAuth.token}`)
         .send({
-            serviceId: services.body.services[0].id,
+            serviceId: services.body.data.services[0].id,
             startTime: startTime.toISOString(),
         });
 
     return {
-        appointmentId: appointmentResponse.body.appointment.id as string,
+        appointmentId: appointmentResponse.body.data.appointment.id as string,
         providerToken: providerAuth.token,
         clientToken: clientAuth.token,
     };
@@ -61,8 +61,8 @@ describe('Provider Appointment Routes (E2E)', () => {
             .set('Authorization', `Bearer ${providerToken}`);
 
         expect(response.status).toEqual(200);
-        expect(response.body.appointments).toHaveLength(1);
-        expect(response.body.appointments[0].id).toEqual(appointmentId);
+        expect(response.body.data.appointments).toHaveLength(1);
+        expect(response.body.data.appointments[0].id).toEqual(appointmentId);
     });
 
     it('should reject clients from fetching the provider schedule', async () => {
@@ -84,7 +84,7 @@ describe('Provider Appointment Routes (E2E)', () => {
             .send({ status: 'CONFIRMED' });
 
         expect(response.status).toEqual(200);
-        expect(response.body.appointment.status).toEqual('CONFIRMED');
+        expect(response.body.data.appointment.status).toEqual('CONFIRMED');
     });
 
     it('should allow admins to update appointment status', async () => {
@@ -97,7 +97,7 @@ describe('Provider Appointment Routes (E2E)', () => {
             .send({ status: 'COMPLETED' });
 
         expect(response.status).toEqual(200);
-        expect(response.body.appointment.status).toEqual('COMPLETED');
+        expect(response.body.data.appointment.status).toEqual('COMPLETED');
     });
 
     it('should return 403 to clients and providers who do not own an appointment', async () => {

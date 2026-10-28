@@ -21,8 +21,8 @@ describe('Fetch Admin Appointments (E2E)', () => {
             .set('Authorization', `Bearer ${auth.token}`);
 
         expect(response.status).toEqual(200);
-        expect(response.body.appointments).toEqual([]);
-        expect(response.body.pagination).toEqual({ page: 1, perPage: 20, total: 0, totalPages: 0 });
+        expect(response.body.data.appointments).toEqual([]);
+        expect(response.body.data.pagination).toEqual({ page: 1, perPage: 20, total: 0, totalPages: 0 });
     });
 
     it('should reject clients from fetching all appointments', async () => {
@@ -40,7 +40,7 @@ describe('Fetch Admin Appointments (E2E)', () => {
 
         const response = await request(app.server)
             .get('/admin/appointments')
-            .set('Authorization', `Bearer ${auth.body.token}`);
+            .set('Authorization', `Bearer ${auth.body.data.token}`);
 
         expect(response.status).toEqual(403);
     });
@@ -56,7 +56,7 @@ describe('Fetch Admin Appointments (E2E)', () => {
         const services = await request(app.server)
             .get('/services')
             .set('Authorization', `Bearer ${providerAuth.token}`);
-        const serviceId = services.body.services[0].id;
+        const serviceId = services.body.data.services[0].id;
 
         const date = new Date();
         date.setDate(date.getDate() + 2);
@@ -87,8 +87,8 @@ describe('Fetch Admin Appointments (E2E)', () => {
             .set('Authorization', `Bearer ${adminAuth.token}`);
 
         expect(response.status).toEqual(200);
-        expect(response.body.appointments).toHaveLength(1);
-        expect(response.body.appointments[0].id).toEqual(second.body.appointment.id);
-        expect(response.body.pagination).toEqual({ page: 2, perPage: 1, total: 2, totalPages: 2 });
+        expect(response.body.data.appointments).toHaveLength(1);
+        expect(response.body.data.appointments[0].id).toEqual(second.body.data.appointment.id);
+        expect(response.body.data.pagination).toEqual({ page: 2, perPage: 1, total: 2, totalPages: 2 });
     });
 });

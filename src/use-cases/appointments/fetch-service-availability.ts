@@ -2,6 +2,7 @@ import type { Appointment } from '@prisma/client';
 import type { AppointmentsRepository } from '../../repositories/appointments-repository.js';
 import type { ServicesRepository } from '../../repositories/services-repository.js';
 import type { BusinessHoursRepository } from '../../repositories/business-hours-repository.js';
+import { BusinessRuleError, ResourceNotFoundError } from '../../errors/application-error.js';
 
 interface FetchServiceAvailabilityUseCaseRequest {
     serviceId: string;
@@ -12,17 +13,15 @@ interface FetchServiceAvailabilityUseCaseResponse {
     availableSlots: string[];
 }
 
-export class ServiceNotFoundError extends Error {
+export class ServiceNotFoundError extends ResourceNotFoundError {
     constructor() {
         super('Service not found.');
-        this.name = 'ServiceNotFoundError';
     }
 }
 
-export class InvalidAvailabilityDateError extends Error {
+export class InvalidAvailabilityDateError extends BusinessRuleError {
     constructor(message: string) {
-        super(message);
-        this.name = 'InvalidAvailabilityDateError';
+        super(message, 'INVALID_AVAILABILITY_DATE');
     }
 }
 

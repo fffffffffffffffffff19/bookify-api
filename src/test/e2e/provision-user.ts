@@ -27,6 +27,6 @@ export async function provisionAndAuthenticate(
     return {
         email,
         password,
-        token: authentication.body.token as string,
+        token: authentication.body.data.token as string,
     };
 }

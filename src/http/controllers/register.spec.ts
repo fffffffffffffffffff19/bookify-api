@@ -42,10 +42,10 @@ describe('Register (E2E)', () => {
             .send({ email, password: '123456password' });
         const profile = await request(app.server)
             .get('/me')
-            .set('Authorization', `Bearer ${authentication.body.token}`);
+            .set('Authorization', `Bearer ${authentication.body.data.token}`);
 
         expect(registration.status).toEqual(201);
         expect(profile.status).toEqual(200);
-        expect(profile.body.user.role).toEqual('CLIENT');
+        expect(profile.body.data.user.role).toEqual('CLIENT');
     });
 });

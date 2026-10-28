@@ -30,17 +30,13 @@ describe('Cancel Appointment (E2E)', () => {
             .get('/services')
             .set('Authorization', `Bearer ${providerAuth.token}`);
 
-        const serviceId = servicesList.body.services[0].id;
-
+        const serviceId = servicesList.body.data.services[0].id;
         const clientEmail = `client-${randomUUID()}@example.com`;
-
         await request(app.server).post('/users').send({
             name: 'Client Jane',
             email: clientEmail,
             password: '123456password',
-            role: 'CLIENT',
         });
-
         const clientAuth = await request(app.server).post('/sessions').send({
             email: clientEmail,
             password: '123456password',
@@ -57,7 +53,7 @@ describe('Cancel Appointment (E2E)', () => {
 
         await request(app.server)
             .post('/appointments')
-            .set('Authorization', `Bearer ${clientAuth.body.token}`)
+            .set('Authorization', `Bearer ${clientAuth.body.data.token}`)
             .send({
                 serviceId,
                 startTime: appointmentDate.toISOString(),
@@ -65,13 +61,13 @@ describe('Cancel Appointment (E2E)', () => {
 
         const appointmentsList = await request(app.server)
             .get('/appointments')
-            .set('Authorization', `Bearer ${clientAuth.body.token}`);
+            .set('Authorization', `Bearer ${clientAuth.body.data.token}`);
 
-        const appointmentId = appointmentsList.body.appointments[0].id;
+        const appointmentId = appointmentsList.body.data.appointments[0].id;
 
         const response = await request(app.server)
             .patch(`/appointments/${appointmentId}/cancel`)
-            .set('Authorization', `Bearer ${clientAuth.body.token}`);
+            .set('Authorization', `Bearer ${clientAuth.body.data.token}`);
 
         expect(response.status).toEqual(204);
     });

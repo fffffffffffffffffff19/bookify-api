@@ -1,5 +1,6 @@
 import type { ServicesRepository } from '../../repositories/services-repository.js';
 import type { Service } from '@prisma/client';
+import { ForbiddenError, ResourceNotFoundError } from '../../errors/application-error.js';
 
 interface UpdateServiceUseCaseRequest {
     serviceId: string;
@@ -28,11 +29,11 @@ export class UpdateServiceUseCase {
         const service = await this.servicesRepository.findById(serviceId);
 
         if (!service) {
-            throw new Error('Service not found.');
+            throw new ResourceNotFoundError('Service not found.');
         }
 
         if (service.userId !== userId) {
-            throw new Error('Not authorized.');
+            throw new ForbiddenError();
         }
 
         service.title = title ?? service.title;

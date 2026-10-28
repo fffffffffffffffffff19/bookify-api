@@ -8,7 +8,10 @@ export function verifyUserRole(roleToVerify: UserRole | readonly UserRole[]) {
         const allowedRoles = Array.isArray(roleToVerify) ? roleToVerify : [roleToVerify];
 
         if (!allowedRoles.includes(role)) {
-            return reply.status(403).send({ message: 'Unauthorized.' });
+            return reply.status(403).send({
+                message: 'Not authorized.',
+                errorCode: 'FORBIDDEN',
+            });
         }
     };
 }

@@ -1,6 +1,7 @@
 import type { UsersRepository } from '../../repositories/users-repository.js';
 import type { User } from '@prisma/client';
 import { hash } from 'bcryptjs';
+import { ResourceConflictError } from '../../errors/application-error.js';
 
 interface RegisterUseCaseRequest {
     name: string;
@@ -27,7 +28,7 @@ export class RegisterUseCase {
         const userWithSameEmail = await this.usersRepository.findByEmail(email);
 
         if (userWithSameEmail) {
-            throw new Error('E-mail already exists.');
+            throw new ResourceConflictError('E-mail already exists.', 'EMAIL_ALREADY_EXISTS');
         }
 
         const user = await this.usersRepository.create({

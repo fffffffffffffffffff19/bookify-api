@@ -31,7 +31,7 @@ describe('Fetch User Services (E2E)', () => {
             .set('Authorization', `Bearer ${token}`);
 
         expect(response.status).toEqual(200);
-        expect(response.body.services).toHaveLength(1);
-        expect(response.body.services[0].title).toEqual('Corte de Cabelo');
+        expect(response.body.data.services).toHaveLength(1);
+        expect(response.body.data.services[0].title).toEqual('Corte de Cabelo');
     });
 });

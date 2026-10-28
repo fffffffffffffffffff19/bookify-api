@@ -10,34 +10,24 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
 
     const { email, password } = authenticateBodySchema.parse(request.body);
 
-    try {
-        const authenticateUseCase = makeAuthenticateUseCase();
+    const authenticateUseCase = makeAuthenticateUseCase();
 
-        const { user } = await authenticateUseCase.execute({
-            email,
-            password,
-        });
+    const { user } = await authenticateUseCase.execute({
+        email,
+        password,
+    });
 
-        const token = await reply.jwtSign(
-            {
-                role: user.role,
+    const token = await reply.jwtSign(
+        {
+            role: user.role,
+        },
+        {
+            sign: {
+                sub: user.id,
+                expiresIn: '7d',
             },
-            {
-                sign: {
-                    sub: user.id,
-                    expiresIn: '7d',
-                },
-            }
-        );
-
-        return reply.status(200).send({
-            token,
-        });
-    } catch (err: any) {
-        if (err.message === 'Invalid credentials.') {
-            return reply.status(400).send({ message: err.message });
         }
+    );
 
-        throw err;
-    }
+    return reply.status(200).send({ token });
 }

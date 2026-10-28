@@ -30,7 +30,7 @@ describe('Update Service (E2E)', () => {
             .get('/services')
             .set('Authorization', `Bearer ${token}`);
 
-        const serviceId = listResponse.body.services[0].id;
+        const serviceId = listResponse.body.data.services[0].id;
 
         const response = await request(app.server)
             .put(`/services/${serviceId}`)

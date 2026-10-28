@@ -24,7 +24,7 @@ describe('Admin Business Hours Routes (E2E)', () => {
             .set('Authorization', `Bearer ${token}`);
 
         expect(initial.status).toEqual(200);
-        expect(initial.body).toEqual({ allowedDays: [1, 2, 3, 4, 5], openHour: 8, closeHour: 18 });
+        expect(initial.body.data).toEqual({ allowedDays: [1, 2, 3, 4, 5], openHour: 8, closeHour: 18 });
 
         const update = await request(app.server)
             .patch('/admin/business-hours')
@@ -32,13 +32,13 @@ describe('Admin Business Hours Routes (E2E)', () => {
             .send({ allowedDays: [0, 2, 4, 6], openHour: 9, closeHour: 17 });
 
         expect(update.status).toEqual(200);
-        expect(update.body).toEqual({ allowedDays: [0, 2, 4, 6], openHour: 9, closeHour: 17 });
+        expect(update.body.data).toEqual({ allowedDays: [0, 2, 4, 6], openHour: 9, closeHour: 17 });
 
         const readback = await request(app.server)
             .get('/admin/business-hours')
             .set('Authorization', `Bearer ${token}`);
 
-        expect(readback.body).toEqual(update.body);
+        expect(readback.body.data).toEqual(update.body.data);
     });
 
     it('should reject non-admins from fetching or updating settings', async () => {

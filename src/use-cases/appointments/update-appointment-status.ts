@@ -1,5 +1,6 @@
 import type { Appointment } from '@prisma/client';
 import type { AppointmentsRepository } from '../../repositories/appointments-repository.js';
+import { ForbiddenError, ResourceNotFoundError } from '../../errors/application-error.js';
 
 interface UpdateAppointmentStatusUseCaseRequest {
     appointmentId: string;
@@ -12,17 +13,15 @@ interface UpdateAppointmentStatusUseCaseResponse {
     appointment: Appointment;
 }
 
-export class AppointmentNotFoundError extends Error {
+export class AppointmentNotFoundError extends ResourceNotFoundError {
     constructor() {
         super('Appointment not found.');
-        this.name = 'AppointmentNotFoundError';
     }
 }
 
-export class UnauthorizedAppointmentAccessError extends Error {
+export class UnauthorizedAppointmentAccessError extends ForbiddenError {
     constructor() {
         super('Not authorized.');
-        this.name = 'UnauthorizedAppointmentAccessError';
     }
 }
 

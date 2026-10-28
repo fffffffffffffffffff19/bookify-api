@@ -1,4 +1,5 @@
 import type { ServicesRepository } from '../../repositories/services-repository.js';
+import { ForbiddenError, ResourceNotFoundError } from '../../errors/application-error.js';
 
 interface DeleteServiceUseCaseRequest {
     serviceId: string;
@@ -12,11 +13,11 @@ export class DeleteServiceUseCase {
         const service = await this.servicesRepository.findById(serviceId);
 
         if (!service) {
-            throw new Error('Service not found.');
+            throw new ResourceNotFoundError('Service not found.');
         }
 
         if (service.userId !== userId) {
-            throw new Error('Not authorized.');
+            throw new ForbiddenError();
         }
 
         await this.servicesRepository.delete(serviceId);

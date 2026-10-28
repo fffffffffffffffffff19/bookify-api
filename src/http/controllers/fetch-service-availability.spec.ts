@@ -22,7 +22,7 @@ async function createProviderService() {
         .set('Authorization', `Bearer ${auth.token}`);
 
     return {
-        serviceId: services.body.services[0].id as string,
+        serviceId: services.body.data.services[0].id as string,
     };
 }
 
@@ -58,8 +58,8 @@ describe('Fetch Service Availability (E2E)', () => {
             .query({ date: dateQuery(date) });
 
         expect(response.status).toEqual(200);
-        expect(response.body.availableSlots).toContain('08:00');
-        expect(response.body.availableSlots).toContain('17:30');
+        expect(response.body.data.availableSlots).toContain('08:00');
+        expect(response.body.data.availableSlots).toContain('17:30');
     });
 
     it('should omit slots that overlap an existing appointment', async () => {
@@ -80,7 +80,7 @@ describe('Fetch Service Availability (E2E)', () => {
         });
         const booking = await request(app.server)
             .post('/appointments')
-            .set('Authorization', `Bearer ${clientAuth.body.token}`)
+            .set('Authorization', `Bearer ${clientAuth.body.data.token}`)
             .send({ serviceId, startTime: date.toISOString() });
         expect(booking.status).toEqual(201);
 
@@ -89,8 +89,8 @@ describe('Fetch Service Availability (E2E)', () => {
             .query({ date: dateQuery(date) });
 
         expect(response.status).toEqual(200);
-        expect(response.body.availableSlots).not.toContain('10:00');
-        expect(response.body.availableSlots).toContain('10:30');
+        expect(response.body.data.availableSlots).not.toContain('10:00');
+        expect(response.body.data.availableSlots).toContain('10:30');
     });
 
     it('should validate the date and return 404 for an unknown service', async () => {

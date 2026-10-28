@@ -12,22 +12,14 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
 
     const { name, email, password, phone } = registerBodySchema.parse(request.body);
 
-    try {
-        const registerUseCase = makeRegisterUseCase();
+    const registerUseCase = makeRegisterUseCase();
 
-        await registerUseCase.execute({
-            name,
-            email,
-            password,
-            ...(phone ? { phone } : {}),
-        });
-    } catch (err: any) {
-        if (err.message === 'E-mail already exists.') {
-            return reply.status(409).send({ message: err.message });
-        }
+    await registerUseCase.execute({
+        name,
+        email,
+        password,
+        ...(phone ? { phone } : {}),
+    });
 
-        throw err;
-    }
-
-    return reply.status(201).send();
+    return reply.status(201).send({ user: { email } });
 }

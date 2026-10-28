@@ -31,7 +31,7 @@ describe('Create Appointment (E2E)', () => {
             .get('/services')
             .set('Authorization', `Bearer ${providerAuth.token}`);
 
-        const serviceId = servicesList.body.services[0].id;
+        const serviceId = servicesList.body.data.services[0].id;
 
         const clientEmail = `client-${randomUUID()}@example.com`;
 
@@ -58,7 +58,7 @@ describe('Create Appointment (E2E)', () => {
 
         const response = await request(app.server)
             .post('/appointments')
-            .set('Authorization', `Bearer ${clientAuth.body.token}`)
+            .set('Authorization', `Bearer ${clientAuth.body.data.token}`)
             .send({
                 serviceId,
                 startTime: appointmentDate.toISOString(),
@@ -91,24 +91,24 @@ describe('Create Appointment (E2E)', () => {
         const created = await request(app.server)
             .post('/appointments')
             .set('Authorization', `Bearer ${clientAuth.token}`)
-            .send({ serviceId: services.body.services[0].id, startTime: appointmentDate.toISOString() });
+            .send({ serviceId: services.body.data.services[0].id, startTime: appointmentDate.toISOString() });
         expect(created.status).toEqual(201);
 
         const appointmentsRepository = new PrismaAppointmentsRepository();
         const containedOverlap = await appointmentsRepository.findConflictingAppointment(
-            providerProfile.body.user.id,
+            providerProfile.body.data.user.id,
             new Date(appointmentDate.getTime() + 5 * 60 * 1000),
             new Date(appointmentDate.getTime() + 15 * 60 * 1000),
         );
-        expect(containedOverlap?.id).toEqual(created.body.appointment.id);
+        expect(containedOverlap?.id).toEqual(created.body.data.appointment.id);
 
         const cancellation = await request(app.server)
-            .patch(`/appointments/${created.body.appointment.id}/cancel`)
+            .patch(`/appointments/${created.body.data.appointment.id}/cancel`)
             .set('Authorization', `Bearer ${clientAuth.token}`);
         expect(cancellation.status).toEqual(204);
 
         const noLongerConflicting = await appointmentsRepository.findConflictingAppointment(
-            providerProfile.body.user.id,
+            providerProfile.body.data.user.id,
             new Date(appointmentDate.getTime() + 5 * 60 * 1000),
             new Date(appointmentDate.getTime() + 15 * 60 * 1000),
         );
