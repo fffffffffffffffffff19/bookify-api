@@ -78,10 +78,15 @@ export class InMemoryAppointmentsRepository implements AppointmentsRepository {
     async findConflictingAppointment(
         providerId: string,
         startTime: Date,
-        endTime: Date
+        endTime: Date,
+        excludeAppointmentId?: string,
     ): Promise<Appointment | null> {
         const conflicting = this.items.find((item) => {
-            if (item.providerId !== providerId || item.status === 'CANCELLED') {
+            if (
+                item.providerId !== providerId ||
+                item.status === 'CANCELLED' ||
+                item.id === excludeAppointmentId
+            ) {
                 return false;
             }
 

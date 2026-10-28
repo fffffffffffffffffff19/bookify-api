@@ -28,6 +28,7 @@ export interface AppointmentsRepository {
         providerId: string,
         startTime: Date,
         endTime: Date,
+        excludeAppointmentId?: string,
     ): Promise<Appointment | null>;
     create(data: Prisma.AppointmentUncheckedCreateInput): Promise<Appointment>;
     save(appointment: Appointment): Promise<Appointment>;

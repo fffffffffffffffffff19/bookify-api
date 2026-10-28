@@ -25,13 +25,19 @@ export class PrismaAppointmentsRepository implements AppointmentsRepository {
         return appointment;
     }
 
-    async findConflictingAppointment(providerId: string, startTime: Date, endTime: Date) {
+    async findConflictingAppointment(
+        providerId: string,
+        startTime: Date,
+        endTime: Date,
+        excludeAppointmentId?: string,
+    ) {
         const appointment = await prisma.appointment.findFirst({
             where: {
                 providerId,
                 status: { not: 'CANCELLED' },
                 startTime: { lt: endTime },
                 endTime: { gt: startTime },
+                ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {}),
             },
         });
 
