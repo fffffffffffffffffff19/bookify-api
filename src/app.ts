@@ -1,6 +1,8 @@
 import fastify, { type FastifyServerOptions } from 'fastify';
 import fastifyJwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 import Sentry from '@sentry/node';
 import { ZodError } from 'zod';
 import { env } from './config/env.js';
@@ -9,6 +11,7 @@ import { userRoutes } from './http/routes/users.routes.js';
 import { servicesRoutes } from './http/routes/services.routes.js';
 import { appointmentsRoutes } from './http/routes/appointments.routes.js';
 import { adminRoutes } from './http/routes/admin.routes.js';
+import { transformOpenApiRoute } from './http/schemas/openapi.js';
 
 export function buildApp(options: FastifyServerOptions = {}) {
     const app = fastify(options);
@@ -30,14 +33,65 @@ export function buildApp(options: FastifyServerOptions = {}) {
         }),
     });
 
-    app.get('/health', async () => ({ status: 'ok' }));
+    app.register(swagger, {
+        openapi: {
+            openapi: '3.0.3',
+            info: {
+                title: 'Bookify API',
+                version: '1.0.0',
+                description: 'Service discovery, appointment booking, provider operations, reviews, and administration.',
+            },
+            servers: [{ url: '/', description: 'Current server' }],
+            tags: [
+                { name: 'Authentication', description: 'Registration and login' },
+                { name: 'Profile', description: 'Authenticated user profile' },
+                { name: 'Services', description: 'Service catalog and provider service management' },
+                { name: 'Appointments', description: 'Booking and appointment lifecycle' },
+                { name: 'Reviews', description: 'Ratings for completed appointments' },
+                { name: 'Administration', description: 'Administrative operations' },
+                { name: 'Health', description: 'Service health check' },
+            ],
+            components: {
+                securitySchemes: {
+                    bearerAuth: {
+                        type: 'http',
+                        scheme: 'bearer',
+                        bearerFormat: 'JWT',
+                        description: 'JWT returned by POST /sessions.',
+                    },
+                },
+            },
+        },
+        transform: transformOpenApiRoute,
+    });
+    app.register(swaggerUi, {
+        routePrefix: '/docs',
+        uiConfig: {
+            docExpansion: 'list',
+            deepLinking: true,
+        },
+        staticCSP: true,
+    });
+
+    app.get('/health', {
+        schema: {
+            tags: ['Health'],
+            summary: 'Check API health',
+            response: { 200: { description: 'API is healthy', type: 'object' } },
+        },
+    }, async () => ({ status: 'ok' }));
     app.register(userRoutes);
     app.register(servicesRoutes);
     app.register(appointmentsRoutes);
     app.register(adminRoutes);
 
-    app.addHook('onSend', async (_request, reply, payload) => {
-        if (reply.statusCode === 204 || reply.statusCode >= 400 || payload == null) {
+    app.addHook('onSend', async (request, reply, payload) => {
+        if (
+            request.url.startsWith('/docs') ||
+            reply.statusCode === 204 ||
+            reply.statusCode >= 400 ||
+            payload == null
+        ) {
             return payload;
         }
 
@@ -71,6 +125,16 @@ export function buildApp(options: FastifyServerOptions = {}) {
                     errorCode: 'VALIDATION_ERROR',
                     issues: error.issues,
                 });
+        }
+
+        if ('code' in error && error.code === 'FST_ERR_VALIDATION') {
+            return reply.status(400).send({
+                message: 'Validation error.',
+                errorCode: 'VALIDATION_ERROR',
+                issues: 'validation' in error && Array.isArray(error.validation)
+                    ? error.validation
+                    : [],
+            });
         }
 
         if (
