@@ -3,10 +3,12 @@ import { register } from '../controllers/register.js';
 import { authenticate } from '../controllers/authenticate.js';
 import { profile } from '../controllers/profile.js';
 import { verifyJWT } from '../middlewares/verify-jwt.js';
+import { updateProfile } from '../controllers/update-profile.js';
 
 export async function userRoutes(app: FastifyInstance) {
     app.post('/users', register);
     app.post('/sessions', authenticate);
 
     app.get('/me', { onRequest: [verifyJWT] }, profile);
+    app.patch('/me', { onRequest: [verifyJWT] }, updateProfile);
 }
