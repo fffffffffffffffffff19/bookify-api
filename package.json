@@ -25,7 +25,8 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
     "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "vitest-environment-prisma": "file:./prisma/vitest-environment-prisma"
   },
   "scripts": {
     "start:dev": "tsx watch src/server.ts",
@@ -33,6 +34,7 @@
     "start": "node dist/server.cjs",
     "test": "vitest run --dir src/use-cases",
     "test:watch": "vitest --dir src/use-cases",
-    "test:e2e": "vitest run --dir src/http"
+    "test:e2e": "vitest run --dir src/http",
+    "test:e2e:watch": "vitest --dir src/http"
   }
 }
