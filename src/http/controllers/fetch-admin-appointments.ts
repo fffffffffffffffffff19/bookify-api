@@ -3,7 +3,14 @@ import { makeFetchAdminAppointmentsUseCase } from '../../use-cases/factories/mak
 import { appointmentListQuerySchema } from '../schemas/appointment-list-query.js';
 
 export async function fetchAdminAppointments(request: FastifyRequest, reply: FastifyReply) {
-    const filters = appointmentListQuerySchema.parse(request.query);
+    const parsedFilters = appointmentListQuerySchema.parse(request.query);
+    const filters = {
+        page: parsedFilters.page,
+        perPage: parsedFilters.perPage,
+        ...(parsedFilters.status !== undefined ? { status: parsedFilters.status } : {}),
+        ...(parsedFilters.from !== undefined ? { from: parsedFilters.from } : {}),
+        ...(parsedFilters.to !== undefined ? { to: parsedFilters.to } : {}),
+    };
     const fetchAdminAppointmentsUseCase = makeFetchAdminAppointmentsUseCase();
     const { appointments, pagination } = await fetchAdminAppointmentsUseCase.execute({ filters });
 

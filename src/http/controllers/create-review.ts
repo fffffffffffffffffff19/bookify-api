@@ -19,7 +19,7 @@ export async function createReview(request: FastifyRequest, reply: FastifyReply)
         appointmentId,
         clientId: request.user.sub,
         rating,
-        comment,
+        ...(comment !== undefined ? { comment } : {}),
     });
 
     return reply.status(201).send({ review });

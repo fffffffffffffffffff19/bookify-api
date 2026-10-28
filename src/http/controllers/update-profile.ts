@@ -17,7 +17,10 @@ export async function updateProfile(request: FastifyRequest, reply: FastifyReply
     const useCase = makeUpdateUserProfileUseCase();
     const { user } = await useCase.execute({
         userId: request.user.sub,
-        ...body,
+        ...(body.name !== undefined ? { name: body.name } : {}),
+        ...(body.email !== undefined ? { email: body.email } : {}),
+        ...(body.oldPassword !== undefined ? { oldPassword: body.oldPassword } : {}),
+        ...(body.newPassword !== undefined ? { newPassword: body.newPassword } : {}),
     });
 
     return reply.status(200).send({
