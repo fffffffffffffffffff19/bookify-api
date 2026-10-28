@@ -15,7 +15,7 @@ A robust, production-ready RESTful API for managing service appointments, built 
 - **Database & ORM**: [PostgreSQL](https://www.postgresql.org/) & [Prisma ORM](https://www.prisma.io/)
 - **Testing**: [Vitest](https://vitest.dev/) & [Supertest](https://github.com/ladjs/supertest) (Isolated Unit & E2E Testing with Custom Prisma Environment)
 - **Validation**: [Zod](https://zod.dev/) (Schema validation and environment parsing)
-- **Authentication**: [JWT](https://jwt.io/) (`@fastify/jwt`) with Role-Based Access Control (`ADMIN` / `MEMBER`)
+- **Authentication**: [JWT](https://jwt.io/) (`@fastify/jwt`) with Role-Based Access Control (`ADMIN` / `CLIENT` / `PROVIDER`)
 - **DevOps & CI/CD**: [Docker](https://www.docker.com/) & Docker Compose, [GitHub Actions](https://github.com/features/actions)
 
 ---
