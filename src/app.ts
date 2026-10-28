@@ -67,6 +67,20 @@ export function buildApp(options: FastifyServerOptions = {}) {
         },
         transform: transformOpenApiRoute,
     });
+    app.register(async (healthRoutes) => {
+        healthRoutes.get('/health', {
+            schema: {
+                tags: ['Health'],
+                summary: 'Check API health',
+                response: { 200: { description: 'API is healthy', type: 'object' } },
+            },
+        }, async () => ({ status: 'ok' }));
+    });
+    app.register(userRoutes);
+    app.register(servicesRoutes);
+    app.register(appointmentsRoutes);
+    app.register(adminRoutes);
+
     app.register(swaggerUi, {
         routePrefix: '/docs',
         uiConfig: {
@@ -75,18 +89,6 @@ export function buildApp(options: FastifyServerOptions = {}) {
         },
         staticCSP: true,
     });
-
-    app.get('/health', {
-        schema: {
-            tags: ['Health'],
-            summary: 'Check API health',
-            response: { 200: { description: 'API is healthy', type: 'object' } },
-        },
-    }, async () => ({ status: 'ok' }));
-    app.register(userRoutes);
-    app.register(servicesRoutes);
-    app.register(appointmentsRoutes);
-    app.register(adminRoutes);
 
     app.addHook('onSend', async (request, reply, payload) => {
         if (
