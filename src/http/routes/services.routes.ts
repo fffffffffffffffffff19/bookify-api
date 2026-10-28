@@ -5,9 +5,11 @@ import { createService } from '../controllers/create-service.js';
 import { fetchUserServices } from '../controllers/fetch-user-services.js';
 import { updateService } from '../controllers/update-service.js';
 import { deleteService } from '../controllers/delete-service.js';
+import { fetchServiceAvailability } from '../controllers/fetch-service-availability.js';
 
 export async function servicesRoutes(app: FastifyInstance) {
     app.get('/services', { onRequest: [verifyJWT] }, fetchUserServices);
+    app.get('/services/:serviceId/availability', fetchServiceAvailability);
 
     app.register(async (providerRoutes) => {
         providerRoutes.addHook('onRequest', verifyJWT);
