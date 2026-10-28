@@ -2,38 +2,15 @@ import { app } from '../../app.js';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
+import { provisionAndAuthenticate } from '../../test/e2e/provision-user.js';
 
 async function createAppointmentFixture() {
-    const suffix = randomUUID();
-    const providerEmail = `provider-${suffix}@example.com`;
-    const clientEmail = `client-${suffix}@example.com`;
-    const password = '123456password';
-
-    await request(app.server).post('/users').send({
-        name: 'Provider User',
-        email: providerEmail,
-        password,
-        role: 'PROVIDER',
-    });
-    await request(app.server).post('/users').send({
-        name: 'Client User',
-        email: clientEmail,
-        password,
-        role: 'CLIENT',
-    });
-
-    const providerAuth = await request(app.server).post('/sessions').send({
-        email: providerEmail,
-        password,
-    });
-    const clientAuth = await request(app.server).post('/sessions').send({
-        email: clientEmail,
-        password,
-    });
+    const providerAuth = await provisionAndAuthenticate(app, 'PROVIDER');
+    const clientAuth = await provisionAndAuthenticate(app, 'CLIENT');
 
     await request(app.server)
         .post('/services')
-        .set('Authorization', `Bearer ${providerAuth.body.token}`)
+        .set('Authorization', `Bearer ${providerAuth.token}`)
         .send({
             title: 'Consultation',
             description: 'Provider appointment test',
@@ -43,7 +20,7 @@ async function createAppointmentFixture() {
 
     const services = await request(app.server)
         .get('/services')
-        .set('Authorization', `Bearer ${providerAuth.body.token}`);
+        .set('Authorization', `Bearer ${providerAuth.token}`);
 
     const startTime = new Date();
     startTime.setDate(startTime.getDate() + 2);
@@ -54,7 +31,7 @@ async function createAppointmentFixture() {
 
     const appointmentResponse = await request(app.server)
         .post('/appointments')
-        .set('Authorization', `Bearer ${clientAuth.body.token}`)
+        .set('Authorization', `Bearer ${clientAuth.token}`)
         .send({
             serviceId: services.body.services[0].id,
             startTime: startTime.toISOString(),
@@ -62,8 +39,8 @@ async function createAppointmentFixture() {
 
     return {
         appointmentId: appointmentResponse.body.appointment.id as string,
-        providerToken: providerAuth.body.token as string,
-        clientToken: clientAuth.body.token as string,
+        providerToken: providerAuth.token,
+        clientToken: clientAuth.token,
     };
 }
 
@@ -112,20 +89,11 @@ describe('Provider Appointment Routes (E2E)', () => {
 
     it('should allow admins to update appointment status', async () => {
         const { appointmentId } = await createAppointmentFixture();
-        const email = `admin-${randomUUID()}@example.com`;
-        const password = '123456password';
-
-        await request(app.server).post('/users').send({
-            name: 'Admin User',
-            email,
-            password,
-            role: 'ADMIN',
-        });
-        const auth = await request(app.server).post('/sessions').send({ email, password });
+        const auth = await provisionAndAuthenticate(app, 'ADMIN');
 
         const response = await request(app.server)
             .patch(`/appointments/${appointmentId}/status`)
-            .set('Authorization', `Bearer ${auth.body.token}`)
+            .set('Authorization', `Bearer ${auth.token}`)
             .send({ status: 'COMPLETED' });
 
         expect(response.status).toEqual(200);
@@ -134,19 +102,7 @@ describe('Provider Appointment Routes (E2E)', () => {
 
     it('should return 403 to clients and providers who do not own an appointment', async () => {
         const { clientToken, appointmentId } = await createAppointmentFixture();
-        const otherProviderEmail = `other-provider-${randomUUID()}@example.com`;
-        const password = '123456password';
-
-        await request(app.server).post('/users').send({
-            name: 'Other Provider',
-            email: otherProviderEmail,
-            password,
-            role: 'PROVIDER',
-        });
-        const otherProviderAuth = await request(app.server).post('/sessions').send({
-            email: otherProviderEmail,
-            password,
-        });
+        const otherProviderAuth = await provisionAndAuthenticate(app, 'PROVIDER');
 
         const forbidden = await request(app.server)
             .patch(`/appointments/${randomUUID()}/status`)
@@ -154,7 +110,7 @@ describe('Provider Appointment Routes (E2E)', () => {
             .send({ status: 'CONFIRMED' });
         const forbiddenProvider = await request(app.server)
             .patch(`/appointments/${appointmentId}/status`)
-            .set('Authorization', `Bearer ${otherProviderAuth.body.token}`)
+            .set('Authorization', `Bearer ${otherProviderAuth.token}`)
             .send({ status: 'CONFIRMED' });
         expect(forbidden.status).toEqual(403);
         expect(forbiddenProvider.status).toEqual(403);

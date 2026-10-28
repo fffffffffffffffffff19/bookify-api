@@ -2,19 +2,10 @@ import { app } from '../../app.js';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
+import { provisionAndAuthenticate } from '../../test/e2e/provision-user.js';
 
 async function authenticate(role: 'ADMIN' | 'CLIENT') {
-    const email = `${role.toLowerCase()}-${randomUUID()}@example.com`;
-    const password = '123456password';
-
-    await request(app.server).post('/users').send({
-        name: `${role} User`,
-        email,
-        password,
-        role,
-    });
-    const response = await request(app.server).post('/sessions').send({ email, password });
-    return response.body.token as string;
+    return (await provisionAndAuthenticate(app, role)).token;
 }
 
 describe('Admin Business Hours Routes (E2E)', () => {

@@ -2,6 +2,7 @@ import { app } from '../../app.js';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
+import { provisionAndAuthenticate } from '../../test/e2e/provision-user.js';
 
 describe('Fetch Admin Appointments (E2E)', () => {
     beforeAll(async () => {
@@ -13,21 +14,11 @@ describe('Fetch Admin Appointments (E2E)', () => {
     });
 
     it('should allow admins to fetch all appointments', async () => {
-        const email = `admin-${randomUUID()}@example.com`;
-        await request(app.server).post('/users').send({
-            name: 'Admin User',
-            email,
-            password: '123456password',
-            role: 'ADMIN',
-        });
-        const auth = await request(app.server).post('/sessions').send({
-            email,
-            password: '123456password',
-        });
+        const auth = await provisionAndAuthenticate(app, 'ADMIN');
 
         const response = await request(app.server)
             .get('/admin/appointments')
-            .set('Authorization', `Bearer ${auth.body.token}`);
+            .set('Authorization', `Bearer ${auth.token}`);
 
         expect(response.status).toEqual(200);
         expect(response.body.appointments).toEqual([]);
@@ -55,31 +46,16 @@ describe('Fetch Admin Appointments (E2E)', () => {
     });
 
     it('should return the requested filtered page of appointments', async () => {
-        const suffix = randomUUID();
-        const adminEmail = `admin-${suffix}@example.com`;
-        const providerEmail = `provider-${suffix}@example.com`;
-        const clientEmail = `client-${suffix}@example.com`;
-        const password = '123456password';
-
-        await request(app.server).post('/users').send({
-            name: 'Admin User', email: adminEmail, password, role: 'ADMIN',
-        });
-        await request(app.server).post('/users').send({
-            name: 'Provider User', email: providerEmail, password, role: 'PROVIDER',
-        });
-        await request(app.server).post('/users').send({
-            name: 'Client User', email: clientEmail, password, role: 'CLIENT',
-        });
-        const providerAuth = await request(app.server).post('/sessions').send({ email: providerEmail, password });
-        const clientAuth = await request(app.server).post('/sessions').send({ email: clientEmail, password });
-        const adminAuth = await request(app.server).post('/sessions').send({ email: adminEmail, password });
+        const providerAuth = await provisionAndAuthenticate(app, 'PROVIDER');
+        const clientAuth = await provisionAndAuthenticate(app, 'CLIENT');
+        const adminAuth = await provisionAndAuthenticate(app, 'ADMIN');
         await request(app.server)
             .post('/services')
-            .set('Authorization', `Bearer ${providerAuth.body.token}`)
+            .set('Authorization', `Bearer ${providerAuth.token}`)
             .send({ title: 'Consultation', price: 50, durationInMinutes: 30 });
         const services = await request(app.server)
             .get('/services')
-            .set('Authorization', `Bearer ${providerAuth.body.token}`);
+            .set('Authorization', `Bearer ${providerAuth.token}`);
         const serviceId = services.body.services[0].id;
 
         const date = new Date();
@@ -88,12 +64,12 @@ describe('Fetch Admin Appointments (E2E)', () => {
         date.setHours(10, 0, 0, 0);
         const first = await request(app.server)
             .post('/appointments')
-            .set('Authorization', `Bearer ${clientAuth.body.token}`)
+            .set('Authorization', `Bearer ${clientAuth.token}`)
             .send({ serviceId, startTime: date.toISOString() });
         const secondTime = new Date(date.getTime() + 60 * 60 * 1000);
         const second = await request(app.server)
             .post('/appointments')
-            .set('Authorization', `Bearer ${clientAuth.body.token}`)
+            .set('Authorization', `Bearer ${clientAuth.token}`)
             .send({ serviceId, startTime: secondTime.toISOString() });
 
         expect(first.status).toEqual(201);
@@ -108,7 +84,7 @@ describe('Fetch Admin Appointments (E2E)', () => {
                 from: date.toISOString(),
                 to: new Date(date.getTime() + 2 * 60 * 60 * 1000).toISOString(),
             })
-            .set('Authorization', `Bearer ${adminAuth.body.token}`);
+            .set('Authorization', `Bearer ${adminAuth.token}`);
 
         expect(response.status).toEqual(200);
         expect(response.body.appointments).toHaveLength(1);

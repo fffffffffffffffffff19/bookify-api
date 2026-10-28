@@ -1,27 +1,10 @@
-import { fastify } from 'fastify';
-import fastifyJwt from '@fastify/jwt';
-import { userRoutes } from './http/routes/users.routes.js';
-import { servicesRoutes } from './http/routes/services.routes.js';
-import { appointmentsRoutes } from './http/routes/appointments.routes.js';
-
-export const app = fastify({ logger: true });
-
-app.register(fastifyJwt, {
-    secret: 'bookify-super-secret-key',
-});
-
-app.get('/health', async () => {
-    return { status: 'ok', message: 'Bookify API is running smoothly!' };
-});
-
-app.register(userRoutes);
-app.register(servicesRoutes);
-app.register(appointmentsRoutes);
+import { app } from './app.js';
+import { env } from './config/env.js';
 
 const start = async () => {
     try {
-        await app.listen({ port: 3333, host: '0.0.0.0' });
-        console.log('HTTP Server running on http://localhost:3333');
+        await app.listen({ port: env.PORT, host: '0.0.0.0' });
+        app.log.info(`HTTP server listening on port ${env.PORT}`);
     } catch (err) {
         app.log.error(err);
         process.exit(1);

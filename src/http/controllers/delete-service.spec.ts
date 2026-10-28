@@ -2,6 +2,7 @@ import { app } from '../../app.js';
 import request from 'supertest';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { randomUUID } from 'node:crypto';
+import { provisionAndAuthenticate } from '../../test/e2e/provision-user.js';
 
 describe('Delete Service (E2E)', () => {
     beforeAll(async () => {
@@ -13,21 +14,7 @@ describe('Delete Service (E2E)', () => {
     });
 
     it('should be able to delete a service', async () => {
-        const email = `provider-${randomUUID()}@example.com`;
-
-        await request(app.server).post('/users').send({
-            name: 'Provider John',
-            email,
-            password: '123456password',
-            role: 'PROVIDER',
-        });
-
-        const authResponse = await request(app.server).post('/sessions').send({
-            email,
-            password: '123456password',
-        });
-
-        const { token } = authResponse.body;
+        const { token } = await provisionAndAuthenticate(app, 'PROVIDER');
 
         await request(app.server)
             .post('/services')

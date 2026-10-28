@@ -2,22 +2,14 @@ import { app } from '../../app.js';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
+import { provisionAndAuthenticate } from '../../test/e2e/provision-user.js';
 
 async function createProviderService() {
-    const email = `provider-${randomUUID()}@example.com`;
-    const password = '123456password';
-
-    await request(app.server).post('/users').send({
-        name: 'Availability Provider',
-        email,
-        password,
-        role: 'PROVIDER',
-    });
-    const auth = await request(app.server).post('/sessions').send({ email, password });
+    const auth = await provisionAndAuthenticate(app, 'PROVIDER');
 
     await request(app.server)
         .post('/services')
-        .set('Authorization', `Bearer ${auth.body.token}`)
+        .set('Authorization', `Bearer ${auth.token}`)
         .send({
             title: 'Consultation',
             description: 'Availability test service',
@@ -27,7 +19,7 @@ async function createProviderService() {
 
     const services = await request(app.server)
         .get('/services')
-        .set('Authorization', `Bearer ${auth.body.token}`);
+        .set('Authorization', `Bearer ${auth.token}`);
 
     return {
         serviceId: services.body.services[0].id as string,
