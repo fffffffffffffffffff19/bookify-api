@@ -120,7 +120,6 @@ Set the environment values in `.env`:
 | `PORT` | HTTP port (defaults to `3333`) |
 | `DATABASE_URL` | PostgreSQL connection URL |
 | `JWT_SECRET` | JWT signing secret; production requires at least 32 characters |
-| `SENTRY_DSN` | Optional error-reporting DSN |
 
 For a local host process, use a database hostname reachable from the host, typically `localhost`. The Compose API container uses the Compose service hostname `postgres`.
 

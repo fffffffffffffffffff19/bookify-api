@@ -3,7 +3,6 @@ import fastifyJwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
-import Sentry from '@sentry/node';
 import { ZodError } from 'zod';
 import { env } from './config/env.js';
 import { ApplicationError } from './errors/application-error.js';
@@ -176,11 +175,7 @@ export function buildApp(options: FastifyServerOptions = {}) {
             });
         }
 
-        if (env.NODE_ENV !== 'production') {
-            request.log.error(error);
-        } else {
-            Sentry.captureException(error);
-        }
+        request.log.error(error);
 
         return reply.status(500).send({
             message: 'Internal server error.',
