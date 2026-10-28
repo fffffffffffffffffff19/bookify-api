@@ -101,7 +101,7 @@ Protected operations use bearer JWT authentication. Register with `POST /users`,
 
 ## API Operations
 
-The API exposes 21 operations. All paths are relative to the server origin; protected operations require `Authorization: Bearer <JWT>`. See `/docs` for request and response schemas.
+The API exposes 22 operations. All paths are relative to the server origin; protected operations require `Authorization: Bearer <JWT>`. See `/docs` for request and response schemas.
 
 | Method | Path | Access | Purpose |
 |---|---|---|---|
@@ -124,6 +124,7 @@ The API exposes 21 operations. All paths are relative to the server origin; prot
 | `POST` | `/appointments/:id/review` | Owning client | Review a completed appointment |
 | `GET` | `/provider/appointments` | Provider or admin | View the provider schedule |
 | `GET` | `/admin/appointments` | Admin | List and filter all appointments |
+| `GET` | `/admin/metrics` | Admin | View appointment, user, and performance metrics |
 | `GET` | `/admin/business-hours` | Admin | Read global business hours |
 | `PATCH` | `/admin/business-hours` | Admin | Update global business hours |
 

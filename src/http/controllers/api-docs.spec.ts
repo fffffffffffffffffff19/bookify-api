@@ -40,12 +40,20 @@ describe('OpenAPI documentation (E2E)', () => {
             '/provider/appointments': expect.any(Object),
             '/admin/appointments': expect.any(Object),
             '/admin/business-hours': expect.any(Object),
+            '/admin/metrics': expect.any(Object),
         }));
         expect(specification.body.paths).toHaveProperty('/services/public');
         expect(specification.body.paths).toHaveProperty('/appointments/{id}/review');
         expect(specification.body.paths['/admin/business-hours'].get.security).toEqual([
             { bearerAuth: [] },
         ]);
+        expect(specification.body.paths['/admin/metrics'].get).toMatchObject({
+            tags: ['Administration'],
+            security: [{ bearerAuth: [] }],
+            responses: expect.objectContaining({ 200: expect.any(Object), 403: expect.any(Object) }),
+        });
+        expect(specification.body.paths['/admin/metrics'].get.responses[200].content['application/json'].schema.properties.data.properties)
+            .toHaveProperty('performance');
         expect(specification.body.components.securitySchemes.bearerAuth).toMatchObject({
             type: 'http',
             scheme: 'bearer',

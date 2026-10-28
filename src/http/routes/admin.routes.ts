@@ -3,11 +3,24 @@ import { verifyJWT } from '../middlewares/verify-jwt.js';
 import { verifyUserRole } from '../middlewares/verify-user-role.js';
 import { fetchBusinessHours } from '../controllers/fetch-business-hours.js';
 import { updateBusinessHours } from '../controllers/update-business-hours.js';
-import { bearerSecurity, responses, schemas } from '../schemas/openapi.js';
+import { fetchAdminMetrics } from '../controllers/fetch-admin-metrics.js';
+import { bearerSecurity, errorResponses, responses, schemas } from '../schemas/openapi.js';
 
 export async function adminRoutes(app: FastifyInstance) {
     app.addHook('onRequest', verifyJWT);
     app.addHook('onRequest', verifyUserRole('ADMIN'));
+
+    app.get('/admin/metrics', {
+        schema: {
+            tags: ['Administration'],
+            summary: 'Get system metrics',
+            security: bearerSecurity,
+            response: {
+                200: { description: 'System metrics', ...schemas.adminMetrics },
+                ...errorResponses,
+            },
+        },
+    }, fetchAdminMetrics);
 
     app.get('/admin/business-hours', {
         schema: {

@@ -193,4 +193,37 @@ export const schemas = {
         },
         required: ['allowedDays', 'openHour', 'closeHour'],
     },
+    adminMetrics: {
+        type: 'object',
+        properties: {
+            appointments: {
+                type: 'object',
+                properties: {
+                    total: { type: 'integer', minimum: 0 },
+                    pending: { type: 'integer', minimum: 0 },
+                    confirmed: { type: 'integer', minimum: 0 },
+                    completed: { type: 'integer', minimum: 0 },
+                    cancelled: { type: 'integer', minimum: 0 },
+                },
+                required: ['total', 'pending', 'confirmed', 'completed', 'cancelled'],
+            },
+            users: {
+                type: 'object',
+                properties: {
+                    clients: { type: 'integer', minimum: 0 },
+                    providers: { type: 'integer', minimum: 0 },
+                },
+                required: ['clients', 'providers'],
+            },
+            performance: {
+                type: 'object',
+                properties: {
+                    completionRate: { type: 'number', minimum: 0, maximum: 100 },
+                    cancellationRate: { type: 'number', minimum: 0, maximum: 100 },
+                },
+                required: ['completionRate', 'cancellationRate'],
+            },
+        },
+        required: ['appointments', 'users', 'performance'],
+    },
 };
