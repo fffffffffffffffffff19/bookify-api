@@ -59,7 +59,7 @@ export class CreateReviewUseCase {
             appointmentId,
             clientId,
             rating,
-            comment,
+            ...(comment !== undefined ? { comment } : {}),
         });
 
         return { review };

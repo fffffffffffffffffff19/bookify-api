@@ -27,9 +27,9 @@ export class FetchAdminAppointmentsUseCase {
         const result = await this.appointmentsRepository.findMany({
             page,
             perPage,
-            status: filters.status,
-            from: filters.from,
-            to: filters.to,
+            ...(filters.status !== undefined ? { status: filters.status } : {}),
+            ...(filters.from !== undefined ? { from: filters.from } : {}),
+            ...(filters.to !== undefined ? { to: filters.to } : {}),
         });
 
         return {

@@ -31,9 +31,9 @@ export class FetchUserAppointmentsUseCase {
         const result = await this.appointmentsRepository.findManyByUserId(userId, {
             page,
             perPage,
-            status: filters.status,
-            from: filters.from,
-            to: filters.to,
+            ...(filters.status !== undefined ? { status: filters.status } : {}),
+            ...(filters.from !== undefined ? { from: filters.from } : {}),
+            ...(filters.to !== undefined ? { to: filters.to } : {}),
         });
 
         return {
