@@ -73,3 +73,13 @@ model Service {
 
   @@map("services")
 }
+
+model BusinessHoursSettings {
+  id          String   @id @default("global")
+  allowedDays Int[]    @default([1, 2, 3, 4, 5]) @map("allowed_days")
+  openHour    Int      @default(8) @map("open_hour")
+  closeHour   Int      @default(18) @map("close_hour")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("business_hours_settings")
+}

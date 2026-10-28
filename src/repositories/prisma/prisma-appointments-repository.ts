@@ -89,4 +89,15 @@ export class PrismaAppointmentsRepository implements AppointmentsRepository {
             where: { providerId },
         });
     }
+
+    async findManyByProviderIdAndDateRange(providerId: string, startTime: Date, endTime: Date) {
+        return prisma.appointment.findMany({
+            where: {
+                providerId,
+                status: { not: 'CANCELLED' },
+                startTime: { lt: endTime },
+                endTime: { gt: startTime },
+            },
+        });
+    }
 }

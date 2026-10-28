@@ -1,7 +1,7 @@
 import type { Appointment } from '@prisma/client';
 import type { AppointmentsRepository } from '../../repositories/appointments-repository.js';
 import type { ServicesRepository } from '../../repositories/services-repository.js';
-import { businessHoursConfig } from '../../config/business-hours.js';
+import type { BusinessHoursRepository } from '../../repositories/business-hours-repository.js';
 
 interface CreateAppointmentUseCaseRequest {
     clientId: string;
@@ -17,6 +17,7 @@ export class CreateAppointmentUseCase {
     constructor(
         private appointmentsRepository: AppointmentsRepository,
         private servicesRepository: ServicesRepository,
+        private businessHoursRepository: BusinessHoursRepository,
     ) { }
 
     async execute({
@@ -32,9 +33,10 @@ export class CreateAppointmentUseCase {
 
         const durationInMs = service.durationInMinutes * 60 * 1000;
         const endTime = new Date(startTime.getTime() + durationInMs);
+        const businessHours = await this.businessHoursRepository.getCurrent();
 
         const dayOfWeek = startTime.getDay();
-        const isAllowedDay = businessHoursConfig.allowedDays.includes(dayOfWeek);
+        const isAllowedDay = businessHours.allowedDays.includes(dayOfWeek);
 
         if (!isAllowedDay) {
             throw new Error('Appointments cannot be scheduled on non-working days.');
@@ -44,7 +46,7 @@ export class CreateAppointmentUseCase {
         const endHour = endTime.getHours();
         const endMinutes = endTime.getMinutes();
 
-        const { openHour, closeHour } = businessHoursConfig;
+        const { openHour, closeHour } = businessHours;
 
         if (
             startHour < openHour ||

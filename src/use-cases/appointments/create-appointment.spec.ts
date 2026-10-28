@@ -2,16 +2,23 @@ import { describe, beforeEach, it, expect } from 'vitest';
 import { CreateAppointmentUseCase } from './create-appointment.js';
 import { InMemoryAppointmentsRepository } from '../../repositories/in-memory/in-memory-appointments-repository.js';
 import { InMemoryServicesRepository } from '../../repositories/in-memory/in-memory-services-repository.js';
+import { InMemoryBusinessHoursRepository } from '../../repositories/in-memory/in-memory-business-hours-repository.js';
 
 let appointmentsRepository: InMemoryAppointmentsRepository;
 let servicesRepository: InMemoryServicesRepository;
+let businessHoursRepository: InMemoryBusinessHoursRepository;
 let sut: CreateAppointmentUseCase;
 
 describe('Create Appointment Use Case', () => {
     beforeEach(async () => {
         appointmentsRepository = new InMemoryAppointmentsRepository();
         servicesRepository = new InMemoryServicesRepository();
-        sut = new CreateAppointmentUseCase(appointmentsRepository, servicesRepository);
+        businessHoursRepository = new InMemoryBusinessHoursRepository();
+        sut = new CreateAppointmentUseCase(
+            appointmentsRepository,
+            servicesRepository,
+            businessHoursRepository,
+        );
 
         await servicesRepository.create({
             id: 'service-1',
@@ -94,5 +101,20 @@ describe('Create Appointment Use Case', () => {
                 startTime,
             })
         ).rejects.toThrow('This time slot is already booked.');
+    });
+
+    it('should respect updated business hours when creating an appointment', async () => {
+        await businessHoursRepository.save({
+            allowedDays: [1, 2, 3, 4, 5],
+            openHour: 10,
+            closeHour: 16,
+        });
+        const startTime = new Date(2026, 9, 28, 9, 0, 0, 0);
+
+        await expect(sut.execute({
+            clientId: 'client-1',
+            serviceId: 'service-1',
+            startTime,
+        })).rejects.toThrow('Appointments must be within business hours (10:00 - 16:00).');
     });
 });
