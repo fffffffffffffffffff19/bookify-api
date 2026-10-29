@@ -1,11 +1,11 @@
 # Bookify API
 
-[![Node.js](https://img.shields.io/badge/Node.js-22-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Fastify](https://img.shields.io/badge/Fastify-5-000000?logo=fastify&logoColor=white)](https://fastify.dev/)
-[![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![Node.js](https://img.shields.io/badge/Node.js-26%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-7%2B-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Fastify](https://img.shields.io/badge/Fastify-5%2B-000000?logo=fastify&logoColor=white)](https://fastify.dev/)
+[![Prisma](https://img.shields.io/badge/Prisma-7%2B-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Vitest](https://img.shields.io/badge/Vitest-5-6E9F18?logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Vitest](https://img.shields.io/badge/Vitest-5%2B-6E9F18?logo=vitest&logoColor=white)](https://vitest.dev/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![CI](https://github.com/fffffffffffffffffff19/bookify-api/actions/workflows/ci.yml/badge.svg)](https://github.com/fffffffffffffffffff19/bookify-api/actions/workflows/ci.yml)
 
@@ -30,12 +30,12 @@ Successful JSON responses use a `{ "data": ... }` envelope. Validation and appli
 
 | Area | Technologies and choices |
 |---|---|
-| Runtime and language | Node.js 22, TypeScript 7, strict compiler settings |
+| Runtime and language | Node.js 26, TypeScript 7, strict compiler settings |
 | HTTP API | Fastify 5, REST, OpenAPI 3, Swagger UI |
-| Validation and security | Zod, JWT authentication, role- and ownership-based authorization, rate limiting |
-| Persistence | PostgreSQL, Prisma 6, versioned SQL migrations |
-| Testing | Vitest unit and E2E projects, PostgreSQL-backed E2E environment, Supertest |
-| Local development and CI | Yarn, Docker Compose, GitHub Actions |
+| Validation and security | Zod 4, JWT authentication, role and ownership-based authorization, rate limiting |
+| Persistence | PostgreSQL, Prisma 7, versioned SQL migrations |
+| Testing | Vitest 5 unit and E2E projects, PostgreSQL-backed E2E environment, Supertest 7 |
+| Local development and CI | Yarn, Vite 8, tsup 9, Docker Compose, GitHub Actions |
 
 ## Architecture
 
@@ -58,8 +58,8 @@ prisma/
 
 ### Requirements
 
-- Node.js 22 or later
-- Yarn Classic (1.22)
+- Node.js 26 or later
+- Yarn Classic 1 or later
 - Docker with the Docker Compose plugin
 
 ### Run the API locally

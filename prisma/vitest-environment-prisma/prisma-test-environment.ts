@@ -1,8 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { execSync } from 'node:child_process'
 import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { PrismaPg } from '@prisma/adapter-pg'
 
 function generateDatabaseURL(schema: string) {
     if (!process.env.DATABASE_URL) {
@@ -18,14 +17,18 @@ function generateDatabaseURL(schema: string) {
 
 export default {
     name: 'prisma',
-    transformMode: 'ssr' as const,
+    viteEnvironment: 'ssr' as const,
     async setup() {
         const schema = `test_${randomUUID()}`
         const databaseURL = generateDatabaseURL(schema)
 
         process.env.DATABASE_URL = databaseURL
 
-        execSync('npx prisma migrate deploy')
+        const prisma = new PrismaClient({
+            adapter: new PrismaPg({ connectionString: databaseURL }, { schema }),
+        })
+
+        execSync('yarn prisma migrate deploy')
 
         return {
             async teardown() {

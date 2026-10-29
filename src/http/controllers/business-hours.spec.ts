@@ -1,7 +1,6 @@
 import { app } from '../../app.js';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { randomUUID } from 'node:crypto';
 import { provisionAndAuthenticate } from '../../test/e2e/provision-user.js';
 
 async function authenticate(role: 'ADMIN' | 'CLIENT') {

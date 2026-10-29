@@ -1,7 +1,6 @@
 import { app } from '../../app.js';
 import request from 'supertest';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { randomUUID } from 'node:crypto';
 import { provisionAndAuthenticate } from '../../test/e2e/provision-user.js';
 
 describe('Fetch User Services (E2E)', () => {

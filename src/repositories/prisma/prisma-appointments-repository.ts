@@ -5,6 +5,15 @@ import type {
     AppointmentsRepository,
 } from '../appointments-repository.js';
 
+function isSerializationConflict(error: unknown) {
+    if (typeof error !== 'object' || error === null) return false;
+
+    const errorRecord = error as { code?: unknown; cause?: { code?: unknown } };
+    return errorRecord.code === 'P2034' ||
+        errorRecord.code === '40001' ||
+        errorRecord.cause?.code === '40001';
+}
+
 export class PrismaAppointmentsRepository implements AppointmentsRepository {
     async create(data: Prisma.AppointmentUncheckedCreateInput) {
         const appointment = await prisma.appointment.create({
@@ -37,13 +46,7 @@ export class PrismaAppointmentsRepository implements AppointmentsRepository {
                     isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
                 });
             } catch (error) {
-                const isSerializationConflict =
-                    typeof error === 'object' &&
-                    error !== null &&
-                    'code' in error &&
-                    error.code === 'P2034';
-
-                if (!isSerializationConflict || attempt === 2) {
+                if (!isSerializationConflict(error) || attempt === 2) {
                     throw error;
                 }
             }
@@ -115,13 +118,7 @@ export class PrismaAppointmentsRepository implements AppointmentsRepository {
                     isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
                 });
             } catch (error) {
-                const isSerializationConflict =
-                    typeof error === 'object' &&
-                    error !== null &&
-                    'code' in error &&
-                    error.code === 'P2034';
-
-                if (!isSerializationConflict || attempt === 2) throw error;
+                if (!isSerializationConflict(error) || attempt === 2) throw error;
             }
         }
 
