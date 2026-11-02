@@ -4,6 +4,7 @@ import { verifyUserRole } from '../middlewares/verify-user-role.js';
 import { fetchBusinessHours } from '../controllers/fetch-business-hours.js';
 import { updateBusinessHours } from '../controllers/update-business-hours.js';
 import { fetchAdminMetrics } from '../controllers/fetch-admin-metrics.js';
+import { fetchAdminAuditLogs } from '../controllers/fetch-admin-audit-logs.js';
 import { bearerSecurity, errorResponses, responses, schemas } from '../schemas/openapi.js';
 
 export async function adminRoutes(app: FastifyInstance) {
@@ -21,6 +22,19 @@ export async function adminRoutes(app: FastifyInstance) {
             },
         },
     }, fetchAdminMetrics);
+
+    app.get('/admin/audit-logs', {
+        schema: {
+            tags: ['Administration'],
+            summary: 'List audit logs',
+            security: bearerSecurity,
+            querystring: schemas.auditLogsQuery,
+            response: {
+                200: { description: 'Paginated audit trail', ...schemas.auditLogs },
+                ...errorResponses,
+            },
+        },
+    }, fetchAdminAuditLogs);
 
     app.get('/admin/business-hours', {
         schema: {

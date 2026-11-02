@@ -20,6 +20,7 @@ Bookify is a production-minded REST API for service discovery and appointment op
 - **Transactional appointment notifications:** appointment creation and cancellation write an outbox event in the same serializable transaction; a polling BullMQ worker delivers mock notifications with bounded exponential retries.
 - **Role-based access control:** `CLIENT`, `PROVIDER`, and `ADMIN` roles are enforced alongside resource ownership rules. Public registration creates client accounts.
 - **Refresh-token sessions:** 15-minute bearer access tokens pair with seven-day `HttpOnly` refresh cookies. Refresh tokens rotate on use, are stored as hashes, and replay revokes all active sessions for the affected user.
+- **Immutable audit trail:** sensitive profile, business-hours, and session-revocation events are appended with actor, request, target, and change metadata; administrators can filter and paginate the history.
 - **Appointment lifecycle:** create, list, cancel, reschedule, and transition appointments, with business rules around allowed status changes and completion times.
 - **Service operations:** public catalog and availability endpoints, plus provider-owned service management.
 - **Image uploads:** authenticated avatar and service-image uploads with signature validation, 5 MB limits, and local HTTP serving.
@@ -153,6 +154,7 @@ Call `POST /auth/refresh` to rotate the refresh cookie and receive a new access 
 | `GET` | `/provider/appointments` | Provider or admin | View the provider schedule |
 | `GET` | `/admin/appointments` | Admin | List and filter all appointments |
 | `GET` | `/admin/metrics` | Admin | View appointment, user, and performance metrics |
+| `GET` | `/admin/audit-logs` | Admin | Filter and paginate the immutable audit trail |
 | `GET` | `/admin/business-hours` | Admin | Read global business hours |
 | `PATCH` | `/admin/business-hours` | Admin | Update global business hours |
 
@@ -161,6 +163,8 @@ Call `POST /auth/refresh` to rotate the refresh cookie and receive a new access 
 Uploads use multipart form data with a single `file` field. The API validates the declared image MIME type and the file signature, assigns a server-generated name, and returns a URL such as `/uploads/avatars/<user-id>/<generated-name>.png`. Local files are stored under `UPLOAD_DIR` (default `uploads/`) and served from `/uploads/`. `StorageAdapter` defines the `store` and `delete` contract used by upload handlers; the local adapter is the configured provider, while an object-store adapter can implement the same contract and return its public URL.
 
 Appointment listing supports `page`, `perPage`, `status`, `from`, and `to`. Time filters apply to appointment start time; `from` is inclusive and `to` is exclusive. `perPage` defaults to 20 and is capped at 100. Responses include pagination metadata.
+
+The admin audit trail supports `page`, `perPage`, `action`, `actorId`, `from`, and `to`; date bounds are inclusive and `perPage` defaults to 20 with a maximum of 100. Audit entries are created through a centralized append-only repository contract and expose no application-level update or delete operation. Password values and other credentials are never included in event payloads.
 
 ## Testing and Build
 

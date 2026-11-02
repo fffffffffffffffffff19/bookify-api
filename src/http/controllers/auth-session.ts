@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import { auditActions } from '../../audit/audit-logger.js';
+import { auditRequestContext } from '../../audit/audit-request-context.js';
 import { env } from '../../config/env.js';
+import { makeAuditLogger } from '../../use-cases/factories/make-audit-logger.js';
 import {
     ACCESS_TOKEN_TTL,
     listActiveSessions,
@@ -100,11 +103,28 @@ export async function getSessions(request: FastifyRequest, reply: FastifyReply) 
 
 export async function deleteSession(request: FastifyRequest, reply: FastifyReply) {
     const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(request.params);
-    await revokeSession(request.user.sub, sessionId);
+    const result = await revokeSession(request.user.sub, sessionId);
+    if (result.count > 0) {
+        await makeAuditLogger().log({
+            ...auditRequestContext(request),
+            action: auditActions.sessionRevoked,
+            targetEntity: 'SESSION',
+            targetId: sessionId,
+            payload: { revokedCount: result.count },
+        });
+    }
     return reply.status(204).send();
 }
 
 export async function deleteAllSessions(request: FastifyRequest, reply: FastifyReply) {
-    await revokeSession(request.user.sub);
+    const result = await revokeSession(request.user.sub);
+    if (result.count > 0) {
+        await makeAuditLogger().log({
+            ...auditRequestContext(request),
+            action: auditActions.sessionRevoked,
+            targetEntity: 'SESSION',
+            payload: { revokedCount: result.count, scope: 'ALL_SESSIONS' },
+        });
+    }
     return reply.status(204).send();
 }

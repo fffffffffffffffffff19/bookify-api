@@ -153,3 +153,21 @@ model RefreshToken {
   @@index([sessionId, consumedAt])
   @@map("refresh_tokens")
 }
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  actorId      String   @map("actor_id")
+  actorRole    String   @map("actor_role")
+  action       String
+  targetEntity String   @map("target_entity")
+  targetId     String?  @map("target_id")
+  payload      Json     @default("{}")
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([action, createdAt])
+  @@index([actorId, createdAt])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

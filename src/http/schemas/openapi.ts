@@ -189,6 +189,17 @@ export const schemas = {
             to: { type: 'string', format: 'date-time' },
         },
     },
+    auditLogsQuery: {
+        type: 'object',
+        properties: {
+            page: { type: 'integer', minimum: 1, default: 1 },
+            perPage: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+            action: { type: 'string' },
+            actorId: { type: 'string' },
+            from: { type: 'string', format: 'date-time' },
+            to: { type: 'string', format: 'date-time' },
+        },
+    },
     createBusinessHoursBody: {
         type: 'object',
         properties: {
@@ -230,5 +241,13 @@ export const schemas = {
             },
         },
         required: ['appointments', 'users', 'performance'],
+    },
+    auditLogs: {
+        type: 'object',
+        properties: {
+            logs: { type: 'array', items: { type: 'object', additionalProperties: true } },
+            pagination: { type: 'object', additionalProperties: true },
+        },
+        required: ['logs', 'pagination'],
     },
 };

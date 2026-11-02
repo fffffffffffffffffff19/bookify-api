@@ -11,7 +11,7 @@ export async function provisionAndAuthenticate(
     const email = `e2e-${role.toLowerCase()}-${randomUUID()}@example.com`;
     const password = '123456password';
 
-    await prisma.user.create({
+    const user = await prisma.user.create({
         data: {
             name: `E2E ${role}`,
             email,
@@ -25,6 +25,7 @@ export async function provisionAndAuthenticate(
         .send({ email, password });
 
     return {
+        actorId: user.id,
         email,
         password,
         token: authentication.body.data.token as string,
