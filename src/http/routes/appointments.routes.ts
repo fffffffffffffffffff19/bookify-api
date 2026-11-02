@@ -9,6 +9,7 @@ import { updateAppointmentStatus } from '../controllers/update-appointment-statu
 import { fetchProviderAppointments } from '../controllers/fetch-provider-appointments.js';
 import { rescheduleAppointment } from '../controllers/reschedule-appointment.js';
 import { createReview } from '../controllers/create-review.js';
+import { initializePayment } from '../controllers/initialize-payment.js';
 import { bearerSecurity, errorResponses, responses, schemas } from '../schemas/openapi.js';
 
 export async function appointmentsRoutes(app: FastifyInstance) {
@@ -34,6 +35,16 @@ export async function appointmentsRoutes(app: FastifyInstance) {
             response: responses(200, 'Paginated user appointments'),
         },
     }, fetchUserAppointments);
+    app.post('/appointments/:id/pay', {
+        onRequest: [verifyUserRole('CLIENT')],
+        schema: {
+            tags: ['Payments'],
+            summary: 'Create or resume checkout for an appointment',
+            security: bearerSecurity,
+            params: schemas.idParams,
+            response: responses(200, 'Payment checkout session'),
+        },
+    }, initializePayment);
     app.get('/admin/appointments', {
         onRequest: [verifyUserRole('ADMIN')],
         schema: {

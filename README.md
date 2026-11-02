@@ -18,6 +18,7 @@ Bookify is a production-minded REST API for service discovery and appointment op
 - **Validated API contracts:** Zod validates request payloads and environment configuration; errors return consistent, actionable responses.
 - **Concurrency-safe bookings:** appointment conflict checks and inserts run in Prisma transactions at PostgreSQL `SERIALIZABLE` isolation. Serialization conflicts are retried, and competing bookings receive `409 Conflict`.
 - **Transactional appointment notifications:** appointment creation and cancellation write an outbox event in the same serializable transaction; a polling BullMQ worker delivers mock notifications with bounded exponential retries.
+- **Payment checkout and webhooks:** appointments use a trusted service price to create Stripe Checkout Sessions (or local mock sessions); signed Stripe events update payment state transactionally and are deduplicated by provider event ID.
 - **Role-based access control:** `CLIENT`, `PROVIDER`, and `ADMIN` roles are enforced alongside resource ownership rules. Public registration creates client accounts.
 - **Refresh-token sessions:** 15-minute bearer access tokens pair with seven-day `HttpOnly` refresh cookies. Refresh tokens rotate on use, are stored as hashes, and replay revokes all active sessions for the affected user.
 - **Immutable audit trail:** sensitive profile, business-hours, and session-revocation events are appended with actor, request, target, and change metadata; administrators can filter and paginate the history.
@@ -150,6 +151,8 @@ Call `POST /auth/refresh` to rotate the refresh cookie and receive a new access 
 | `PATCH` | `/appointments/:id/cancel` | Authenticated; ownership rules apply | Cancel an appointment |
 | `PATCH` | `/appointments/:id/reschedule` | Authenticated; ownership and admin rules apply | Reschedule an appointment |
 | `PATCH` | `/appointments/:id/status` | Authenticated; role and ownership rules apply | Apply an allowed status transition |
+| `POST` | `/appointments/:id/pay` | Owning client | Initialize or resume appointment checkout |
+| `POST` | `/webhooks/stripe` | Public, Stripe signature required | Process verified payment status events |
 | `POST` | `/appointments/:id/review` | Owning client | Review a completed appointment |
 | `GET` | `/provider/appointments` | Provider or admin | View the provider schedule |
 | `GET` | `/admin/appointments` | Admin | List and filter all appointments |
@@ -165,6 +168,8 @@ Uploads use multipart form data with a single `file` field. The API validates th
 Appointment listing supports `page`, `perPage`, `status`, `from`, and `to`. Time filters apply to appointment start time; `from` is inclusive and `to` is exclusive. `perPage` defaults to 20 and is capped at 100. Responses include pagination metadata.
 
 The admin audit trail supports `page`, `perPage`, `action`, `actorId`, `from`, and `to`; date bounds are inclusive and `perPage` defaults to 20 with a maximum of 100. Audit entries are created through a centralized append-only repository contract and expose no application-level update or delete operation. Password values and other credentials are never included in event payloads.
+
+Payment initialization reads the appointment's price from its service record; clients cannot provide or override the amount. Set `PAYMENT_PROVIDER=mock` for local development, or configure `PAYMENT_PROVIDER=stripe`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET` for Stripe Checkout. Set `PAYMENT_SUCCESS_URL`, `PAYMENT_CANCEL_URL`, and `PAYMENT_CURRENCY` as needed. Production requires the Stripe provider and both Stripe secrets. The public `POST /webhooks/stripe` endpoint verifies Stripe's timestamped signature against the unmodified request body; duplicate event IDs are accepted but not applied twice. For local Stripe testing, forward events with `stripe listen --forward-to localhost:3333/webhooks/stripe`.
 
 ## Testing and Build
 

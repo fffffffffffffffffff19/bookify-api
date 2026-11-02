@@ -14,6 +14,7 @@ import { userRoutes } from './http/routes/users.routes.js';
 import { servicesRoutes } from './http/routes/services.routes.js';
 import { appointmentsRoutes } from './http/routes/appointments.routes.js';
 import { adminRoutes } from './http/routes/admin.routes.js';
+import { webhooksRoutes } from './http/routes/webhooks.routes.js';
 import { transformOpenApiRoute } from './http/schemas/openapi.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -66,6 +67,7 @@ export function buildApp(options: FastifyServerOptions = {}) {
                 { name: 'Services', description: 'Service catalog and provider service management' },
                 { name: 'Appointments', description: 'Booking and appointment lifecycle' },
                 { name: 'Reviews', description: 'Ratings for completed appointments' },
+                { name: 'Payments', description: 'Appointment checkout and payment provider webhooks' },
                 { name: 'Administration', description: 'Administrative operations' },
                 { name: 'Health', description: 'Service health check' },
             ],
@@ -101,6 +103,7 @@ export function buildApp(options: FastifyServerOptions = {}) {
     app.register(servicesRoutes);
     app.register(appointmentsRoutes);
     app.register(adminRoutes);
+    app.register(webhooksRoutes);
 
     app.register(swaggerUi, {
         routePrefix: '/docs',
