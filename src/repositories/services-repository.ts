@@ -15,6 +15,7 @@ export interface PublicCatalogService {
     description: string | null;
     price: Service['price'];
     durationInMinutes: number;
+    imageUrl: string | null;
     provider: {
         id: string;
         name: string | null;

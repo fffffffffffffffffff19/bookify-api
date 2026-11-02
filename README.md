@@ -22,6 +22,7 @@ Bookify is a production-minded REST API for service discovery and appointment op
 - **Refresh-token sessions:** 15-minute bearer access tokens pair with seven-day `HttpOnly` refresh cookies. Refresh tokens rotate on use, are stored as hashes, and replay revokes all active sessions for the affected user.
 - **Appointment lifecycle:** create, list, cancel, reschedule, and transition appointments, with business rules around allowed status changes and completion times.
 - **Service operations:** public catalog and availability endpoints, plus provider-owned service management.
+- **Image uploads:** authenticated avatar and service-image uploads with signature validation, 5 MB limits, and local HTTP serving.
 - **Reviews and business hours:** clients can review completed appointments; administrators manage global operating hours.
 - **Request protection:** global rate limiting, with tighter per-IP/email login limits and registration limits.
 - **Discoverable API:** OpenAPI 3 documentation and Swagger UI are served by the application.
@@ -141,6 +142,8 @@ Call `POST /auth/refresh` to rotate the refresh cookie and receive a new access 
 | `DELETE` | `/services/:id` | Provider | Delete an owned service |
 | `GET` | `/me` | Authenticated | Read safe profile fields |
 | `PATCH` | `/me` | Authenticated | Update profile and optionally password |
+| `PATCH` | `/me/avatar` | Authenticated | Upload a JPEG, PNG, or WebP avatar (maximum 5 MB) |
+| `PATCH` | `/services/:id/image` | Owning provider | Upload a JPEG, PNG, or WebP service image (maximum 5 MB) |
 | `POST` | `/appointments` | Client | Book an appointment |
 | `GET` | `/appointments` | Authenticated | List own appointments with pagination and filters |
 | `PATCH` | `/appointments/:id/cancel` | Authenticated; ownership rules apply | Cancel an appointment |
@@ -154,6 +157,8 @@ Call `POST /auth/refresh` to rotate the refresh cookie and receive a new access 
 | `PATCH` | `/admin/business-hours` | Admin | Update global business hours |
 
 </details>
+
+Uploads use multipart form data with a single `file` field. The API validates the declared image MIME type and the file signature, assigns a server-generated name, and returns a URL such as `/uploads/avatars/<user-id>/<generated-name>.png`. Local files are stored under `UPLOAD_DIR` (default `uploads/`) and served from `/uploads/`. `StorageAdapter` defines the `store` and `delete` contract used by upload handlers; the local adapter is the configured provider, while an object-store adapter can implement the same contract and return its public URL.
 
 Appointment listing supports `page`, `perPage`, `status`, `from`, and `to`. Time filters apply to appointment start time; `from` is inclusive and `to` is exclusive. `perPage` defaults to 20 and is capped at 100. Responses include pagination metadata.
 

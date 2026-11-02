@@ -33,6 +33,7 @@ model User {
   email        String   @unique
   passwordHash String   @map("password_hash")
   phone        String?
+  avatarUrl    String?  @map("avatar_url")
   role         Role     @default(CLIENT)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -86,6 +87,7 @@ model Service {
   id                String   @id @default(uuid())
   title             String
   description       String?
+  imageUrl          String?  @map("image_url")
   price             Decimal
   durationInMinutes Int      @map("duration_in_minutes")
   userId            String   @map("user_id")

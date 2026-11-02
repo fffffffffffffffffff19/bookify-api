@@ -9,6 +9,7 @@ interface UpdateServiceUseCaseRequest {
     description?: string | null | undefined;
     price?: number | undefined;
     durationInMinutes?: number | undefined;
+    imageUrl?: string | undefined;
 }
 
 interface UpdateServiceUseCaseResponse {
@@ -25,6 +26,7 @@ export class UpdateServiceUseCase {
         description,
         price,
         durationInMinutes,
+        imageUrl,
     }: UpdateServiceUseCaseRequest): Promise<UpdateServiceUseCaseResponse> {
         const service = await this.servicesRepository.findById(serviceId);
 
@@ -44,6 +46,7 @@ export class UpdateServiceUseCase {
         }
 
         service.durationInMinutes = durationInMinutes ?? service.durationInMinutes;
+        service.imageUrl = imageUrl ?? service.imageUrl;
 
         await this.servicesRepository.save(service);
 

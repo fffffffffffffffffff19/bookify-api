@@ -13,6 +13,7 @@ export interface UpdateUserProfileUseCaseRequest {
     email?: string;
     oldPassword?: string;
     newPassword?: string;
+    avatarUrl?: string;
 }
 
 interface UpdateUserProfileUseCaseResponse {
@@ -28,6 +29,7 @@ export class UpdateUserProfileUseCase {
         email,
         oldPassword,
         newPassword,
+        avatarUrl,
     }: UpdateUserProfileUseCaseRequest): Promise<UpdateUserProfileUseCaseResponse> {
         const user = await this.usersRepository.findById(userId);
         if (!user) {
@@ -41,9 +43,10 @@ export class UpdateUserProfileUseCase {
             }
         }
 
-        const updateData: { name?: string; email?: string; passwordHash?: string } = {};
+        const updateData: { name?: string; email?: string; passwordHash?: string; avatarUrl?: string } = {};
         if (name !== undefined) updateData.name = name;
         if (email !== undefined) updateData.email = email;
+        if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
 
         if (newPassword !== undefined) {
             if (oldPassword === undefined || !(await compare(oldPassword, user.passwordHash))) {

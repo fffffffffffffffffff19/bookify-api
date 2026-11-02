@@ -72,6 +72,7 @@ describe('Profile (E2E)', () => {
             name: 'After Update',
             email: `updated-${email}`,
             role: 'CLIENT',
+            avatarUrl: null,
             createdAt: expect.any(String),
         });
         expect(response.body.data.user).not.toHaveProperty('passwordHash');

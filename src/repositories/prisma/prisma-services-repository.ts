@@ -30,6 +30,7 @@ export class PrismaServicesRepository implements ServicesRepository {
                 description: true,
                 price: true,
                 durationInMinutes: true,
+                imageUrl: true,
                 user: { select: { id: true, name: true } },
             },
         });

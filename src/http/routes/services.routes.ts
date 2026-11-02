@@ -7,6 +7,7 @@ import { updateService } from '../controllers/update-service.js';
 import { deleteService } from '../controllers/delete-service.js';
 import { fetchServiceAvailability } from '../controllers/fetch-service-availability.js';
 import { fetchPublicServiceCatalog } from '../controllers/fetch-public-service-catalog.js';
+import { uploadServiceImage } from '../controllers/upload-image.js';
 import { bearerSecurity, errorResponses, responses, schemas } from '../schemas/openapi.js';
 
 export async function servicesRoutes(app: FastifyInstance) {
@@ -59,6 +60,15 @@ export async function servicesRoutes(app: FastifyInstance) {
                 response: responses(200, 'Service updated'),
             },
         }, updateService);
+        providerRoutes.patch('/services/:id/image', {
+            schema: {
+                tags: ['Services'],
+                summary: 'Upload an image for an owned service',
+                security: bearerSecurity,
+                params: schemas.idParams,
+                response: responses(200, 'Service image updated'),
+            },
+        }, uploadServiceImage);
         providerRoutes.delete('/services/:id', {
             schema: {
                 tags: ['Services'],

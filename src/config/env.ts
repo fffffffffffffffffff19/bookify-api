@@ -17,6 +17,7 @@ const envSchema = z.object({
         (value) => ['redis:', 'rediss:'].includes(new URL(value).protocol),
         'REDIS_URL must use the redis or rediss protocol.',
     ).default('redis://localhost:6379'),
+    UPLOAD_DIR: z.string().min(1).default('uploads'),
     JWT_SECRET: z.string().min(1),
 }).superRefine((values, context) => {
     if (values.NODE_ENV === 'production' && values.JWT_SECRET.length < 32) {

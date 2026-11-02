@@ -24,6 +24,7 @@ export class InMemoryServicesRepository implements ServicesRepository {
                 description: service.description,
                 price: service.price,
                 durationInMinutes: service.durationInMinutes,
+                imageUrl: service.imageUrl,
                 provider: { id: service.userId, name: null },
             }));
     }
@@ -33,6 +34,7 @@ export class InMemoryServicesRepository implements ServicesRepository {
             id: data.id ?? randomUUID(),
             title: data.title,
             description: data.description ?? null,
+            imageUrl: data.imageUrl ?? null,
             price: new Prisma.Decimal(data.price.toString()),
             durationInMinutes: data.durationInMinutes,
             userId: data.userId,
@@ -62,6 +64,7 @@ export class InMemoryServicesRepository implements ServicesRepository {
                 data.description !== undefined
                     ? (data.description as string | null)
                     : existingService.description,
+            imageUrl: typeof data.imageUrl === 'string' ? data.imageUrl : existingService.imageUrl,
             price: data.price ? new Prisma.Decimal(data.price.toString()) : existingService.price,
             durationInMinutes:
                 typeof data.durationInMinutes === 'number'

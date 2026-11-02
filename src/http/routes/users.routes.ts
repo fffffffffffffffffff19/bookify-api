@@ -4,6 +4,7 @@ import { authenticate } from '../controllers/authenticate.js';
 import { profile } from '../controllers/profile.js';
 import { verifyJWT } from '../middlewares/verify-jwt.js';
 import { updateProfile } from '../controllers/update-profile.js';
+import { uploadAvatar } from '../controllers/upload-image.js';
 import {
     deleteAllSessions,
     deleteSession,
@@ -106,4 +107,13 @@ export async function userRoutes(app: FastifyInstance) {
             response: responses(200, 'Updated safe user profile'),
         },
     }, updateProfile);
+    app.patch('/me/avatar', {
+        onRequest: [verifyJWT],
+        schema: {
+            tags: ['Profile'],
+            summary: 'Upload the authenticated user avatar',
+            security: bearerSecurity,
+            response: responses(200, 'Avatar updated'),
+        },
+    }, uploadAvatar);
 }

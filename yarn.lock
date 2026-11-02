@@ -161,7 +161,12 @@
     ajv-formats "^3.0.1"
     fast-uri "^4.0.0"
 
-"@fastify/deepmerge@^3.1.0":
+"@fastify/busboy@^3.0.0":
+  version "3.2.4"
+  resolved "https://registry.yarnpkg.com/@fastify/busboy/-/busboy-3.2.4.tgz#c5af797a5eeff6304144c6d3cb7cad022c0a55b0"
+  integrity sha512-lQS8xcXT54rdJb+wlG/Q7SMSdtkZEpLPHooSDUZyyZm9LJD7X1kONPhVoPaHq+dsPtWUGGLIz9gBNhs9qKbylw==
+
+"@fastify/deepmerge@^3.0.0", "@fastify/deepmerge@^3.1.0":
   version "3.2.4"
   resolved "https://registry.npmjs.org/@fastify/deepmerge/-/deepmerge-3.2.4.tgz"
   integrity sha512-kc8GQq5gX9RRhw0rov3DMrN8wS8yRlxJRdDzsYwwdBV/wazuVgc/1K7CKL90tlvu3RlHan6Y0R0aE3nJtBz2eQ==
@@ -201,6 +206,17 @@
   dependencies:
     dequal "^2.0.3"
 
+"@fastify/multipart@^10.1.7":
+  version "10.1.7"
+  resolved "https://registry.yarnpkg.com/@fastify/multipart/-/multipart-10.1.7.tgz#786bbf7d5f70e64f9431e26d691dff55f4928cc0"
+  integrity sha512-Zjqtrjts+litOXPad9wkX9SayV7Jno8Mnw+cNssi0I3FvPbfWwe9GYj69m0W+KMz4kjHViv6q5VKR3b8jW8yjA==
+  dependencies:
+    "@fastify/busboy" "^3.0.0"
+    "@fastify/deepmerge" "^3.0.0"
+    "@fastify/error" "^4.0.0"
+    fastify-plugin "^6.0.0"
+    secure-json-parse "^4.0.0"
+
 "@fastify/proxy-addr@^5.0.0":
   version "5.1.2"
   resolved "https://registry.npmjs.org/@fastify/proxy-addr/-/proxy-addr-5.1.2.tgz"
@@ -233,6 +249,19 @@
 "@fastify/static@^10.1.0":
   version "10.1.8"
   resolved "https://registry.npmjs.org/@fastify/static/-/static-10.1.8.tgz"
+  integrity sha512-3CbgWOXJX8f46xxsuOgQl9h0lyQQiABMG40kxRF5PWJk4LyBW5m3mLZoW5glnm2TUTC1gVFCBnqOt5S6zIIIrg==
+  dependencies:
+    "@fastify/accept-negotiator" "^2.0.0"
+    "@fastify/error" "^4.0.0"
+    "@fastify/send" "^4.2.0"
+    content-disposition "^3.0.0"
+    fastify-plugin "^6.0.0"
+    fastq "^1.17.1"
+    glob "^13.0.0"
+
+"@fastify/static@^10.1.8":
+  version "10.1.8"
+  resolved "https://registry.yarnpkg.com/@fastify/static/-/static-10.1.8.tgz#8b0a298c3aaa906471626003cc38ee2fd146aebb"
   integrity sha512-3CbgWOXJX8f46xxsuOgQl9h0lyQQiABMG40kxRF5PWJk4LyBW5m3mLZoW5glnm2TUTC1gVFCBnqOt5S6zIIIrg==
   dependencies:
     "@fastify/accept-negotiator" "^2.0.0"

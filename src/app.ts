@@ -3,6 +3,10 @@ import fastifyJwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
+import multipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import path from 'node:path';
+import { mkdirSync } from 'node:fs';
 import { ZodError } from 'zod';
 import { env } from './config/env.js';
 import { ApplicationError } from './errors/application-error.js';
@@ -34,6 +38,17 @@ export function buildApp(options: FastifyServerOptions = {}) {
                 message: `Rate limit exceeded. Retry in ${context.after}.`,
             },
         }),
+    });
+
+    app.register(multipart, {
+        limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 0 },
+    });
+    mkdirSync(path.resolve(env.UPLOAD_DIR), { recursive: true });
+    app.register(fastifyStatic, {
+        root: path.resolve(env.UPLOAD_DIR),
+        prefix: '/uploads/',
+        decorateReply: false,
+        list: false,
     });
 
     app.register(swagger, {
@@ -147,6 +162,13 @@ export function buildApp(options: FastifyServerOptions = {}) {
                 issues: Array.isArray(errorRecord.validation)
                     ? errorRecord.validation
                     : [],
+            });
+        }
+
+        if (errorRecord.statusCode === 413 || errorRecord.code === 'FST_REQ_FILE_TOO_LARGE') {
+            return reply.status(413).send({
+                message: 'Image exceeds the 5 MB upload limit.',
+                errorCode: 'FILE_TOO_LARGE',
             });
         }
 
