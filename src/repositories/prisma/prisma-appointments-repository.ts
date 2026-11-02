@@ -16,11 +16,13 @@ function isSerializationConflict(error: unknown) {
 
 export class PrismaAppointmentsRepository implements AppointmentsRepository {
     async create(data: Prisma.AppointmentUncheckedCreateInput) {
-        const appointment = await prisma.appointment.create({
-            data,
+        return prisma.$transaction(async (transaction) => {
+            const appointment = await transaction.appointment.create({ data });
+            await this.createOutboxEvent(transaction, appointment, 'appointment.created');
+            return appointment;
+        }, {
+            isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
         });
-
-        return appointment;
     }
 
     async createIfNoConflict(data: Prisma.AppointmentUncheckedCreateInput) {
@@ -41,7 +43,9 @@ export class PrismaAppointmentsRepository implements AppointmentsRepository {
                         return null;
                     }
 
-                    return transaction.appointment.create({ data });
+                    const appointment = await transaction.appointment.create({ data });
+                    await this.createOutboxEvent(transaction, appointment, 'appointment.created');
+                    return appointment;
                 }, {
                     isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
                 });
@@ -130,13 +134,29 @@ export class PrismaAppointmentsRepository implements AppointmentsRepository {
         expectedStatus: Appointment['status'],
         status: Appointment['status'],
     ) {
-        const updated = await prisma.appointment.updateMany({
-            where: { id, status: expectedStatus },
-            data: { status },
-        });
-        if (updated.count !== 1) return null;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            try {
+                return await prisma.$transaction(async (transaction) => {
+                    const updated = await transaction.appointment.updateMany({
+                        where: { id, status: expectedStatus },
+                        data: { status },
+                    });
+                    if (updated.count !== 1) return null;
 
-        return prisma.appointment.findUnique({ where: { id } });
+                    const appointment = await transaction.appointment.findUnique({ where: { id } });
+                    if (appointment && status === 'CANCELLED') {
+                        await this.createOutboxEvent(transaction, appointment, 'appointment.cancelled');
+                    }
+                    return appointment;
+                }, {
+                    isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+                });
+            } catch (error) {
+                if (!isSerializationConflict(error) || attempt === 2) throw error;
+            }
+        }
+
+        return null;
     }
 
     async findById(id: string) {
@@ -217,6 +237,28 @@ export class PrismaAppointmentsRepository implements AppointmentsRepository {
     async findManyByProviderId(providerId: string) {
         return prisma.appointment.findMany({
             where: { providerId },
+        });
+    }
+
+    private async createOutboxEvent(
+        transaction: Prisma.TransactionClient,
+        appointment: Appointment,
+        eventType: string,
+    ) {
+        await transaction.outboxEvent.create({
+            data: {
+                aggregateType: 'Appointment',
+                aggregateId: appointment.id,
+                eventType,
+                payload: {
+                    appointmentId: appointment.id,
+                    clientId: appointment.clientId,
+                    providerId: appointment.providerId,
+                    serviceId: appointment.serviceId,
+                    startTime: appointment.startTime.toISOString(),
+                    endTime: appointment.endTime.toISOString(),
+                },
+            },
         });
     }
 

@@ -17,6 +17,7 @@ Bookify is a production-minded REST API for service discovery and appointment op
 
 - **Validated API contracts:** Zod validates request payloads and environment configuration; errors return consistent, actionable responses.
 - **Concurrency-safe bookings:** appointment conflict checks and inserts run in Prisma transactions at PostgreSQL `SERIALIZABLE` isolation. Serialization conflicts are retried, and competing bookings receive `409 Conflict`.
+- **Transactional appointment notifications:** appointment creation and cancellation write an outbox event in the same serializable transaction; a polling BullMQ worker delivers mock notifications with bounded exponential retries.
 - **Role-based access control:** `CLIENT`, `PROVIDER`, and `ADMIN` roles are enforced alongside resource ownership rules. Public registration creates client accounts.
 - **Refresh-token sessions:** 15-minute bearer access tokens pair with seven-day `HttpOnly` refresh cookies. Refresh tokens rotate on use, are stored as hashes, and replay revokes all active sessions for the affected user.
 - **Appointment lifecycle:** create, list, cancel, reschedule, and transition appointments, with business rules around allowed status changes and completion times.
@@ -34,7 +35,7 @@ Successful JSON responses use a `{ "data": ... }` envelope. Validation and appli
 | Runtime and language | Node.js 26, TypeScript 7, strict compiler settings |
 | HTTP API | Fastify 5, REST, OpenAPI 3, Swagger UI |
 | Validation and security | Zod 4, rotating refresh-token sessions, short-lived JWT authentication, role and ownership-based authorization, rate limiting |
-| Persistence | PostgreSQL, Prisma 7, versioned SQL migrations |
+| Persistence and jobs | PostgreSQL, Prisma 7, transactional outbox, BullMQ, Redis |
 | Testing | Vitest 5 unit and E2E projects, PostgreSQL-backed E2E environment, Supertest 7 |
 | Local development and CI | Yarn, Vite 8, tsup 9, Docker Compose, GitHub Actions |
 
@@ -50,6 +51,7 @@ src/
   use-cases/       Appointment, business-hours, review, service, and user workflows
   app.ts           Shared Fastify application factory
   server.ts        HTTP server entry point
+  worker.ts        Outbox poller and BullMQ notification worker
 prisma/
   migrations/      Database migration history
   schema.prisma    PostgreSQL data model
@@ -76,29 +78,35 @@ cp .env.example .env
 
 The example `.env` targets PostgreSQL on `localhost:5432`, matching the Compose database. Replace the placeholder `JWT_SECRET` for your environment; production secrets must be at least 32 characters. Keep `.env` out of source control.
 
-Start PostgreSQL, generate Prisma Client, and apply migrations:
+Start PostgreSQL and Redis, generate Prisma Client, and apply migrations:
 
 ```bash
-docker compose up -d postgres
+docker compose up -d postgres redis
 yarn db:generate
 yarn db:migrate
 ```
 
-Run the development server:
+Run the API and outbox worker in separate terminals:
 
 ```bash
 yarn start:dev
 ```
 
+```bash
+yarn start:worker:dev
+```
+
 The API listens on [http://localhost:3333](http://localhost:3333) by default. This hybrid workflow is the recommended development setup: `tsx watch` reloads the API as source files change, and running Node on the host keeps editor debugging and logs straightforward, while PostgreSQL remains isolated in Docker.
 
-To run both the API and PostgreSQL in containers instead, use:
+To run the API, PostgreSQL, Redis, and worker in containers instead, use:
 
 ```bash
 yarn start:docker
 ```
 
-This builds the API image, starts both services, and applies migrations when the API container starts. It is useful for checking the containerized setup; source changes require rebuilding the image, so it is less convenient for day-to-day iteration.
+This builds the application image, starts all four services, and applies migrations when the API container starts. It is useful for checking the containerized setup; source changes require rebuilding the image, so it is less convenient for day-to-day iteration.
+
+`REDIS_URL` configures the worker's Redis connection and defaults to `redis://localhost:6379`; use `redis://redis:6379` for the Compose worker. The worker polls pending outbox rows every two seconds, enqueues jobs by event UUID, and retries delivery up to five times with exponential backoff. Successful events become `PROCESSED`; events that exhaust retries become `FAILED`. The current notification adapter is intentionally a mock and logs the appointment event ID and type.
 
 ## API Documentation
 

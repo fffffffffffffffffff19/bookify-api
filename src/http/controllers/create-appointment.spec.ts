@@ -4,6 +4,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { PrismaAppointmentsRepository } from '../../repositories/prisma/prisma-appointments-repository.js';
 import { provisionAndAuthenticate } from '../../test/e2e/provision-user.js';
+import { prisma } from '../../lib/prisma.js';
 
 describe('Create Appointment (E2E)', () => {
     beforeAll(async () => {
@@ -65,6 +66,16 @@ describe('Create Appointment (E2E)', () => {
             });
 
         expect(response.status).toEqual(201);
+        const appointmentId = response.body.data.appointment.id as string;
+        const outboxEvent = await prisma.outboxEvent.findFirst({
+            where: { aggregateId: appointmentId, eventType: 'appointment.created' },
+        });
+        expect(outboxEvent).toMatchObject({
+            aggregateType: 'Appointment',
+            aggregateId: appointmentId,
+            status: 'PENDING',
+            attempts: 0,
+        });
     });
 
     it('should detect contained overlaps for a provider and ignore cancelled appointments', async () => {

@@ -1,4 +1,4 @@
-import type { Appointment, Prisma } from '@prisma/client';
+import type { Appointment, OutboxEvent, Prisma } from '@prisma/client';
 import type {
     AppointmentListFilters,
     AppointmentsRepository,
@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 
 export class InMemoryAppointmentsRepository implements AppointmentsRepository {
     public items: Appointment[] = [];
+    public outboxEvents: OutboxEvent[] = [];
 
     async findById(id: string): Promise<Appointment | null> {
         const appointment = this.items.find((item) => item.id === id);
@@ -110,6 +111,7 @@ export class InMemoryAppointmentsRepository implements AppointmentsRepository {
         };
 
         this.items.push(appointment);
+        this.addOutboxEvent(appointment, 'appointment.created');
         return appointment;
     }
 
@@ -166,7 +168,31 @@ export class InMemoryAppointmentsRepository implements AppointmentsRepository {
 
         appointment.status = status;
         appointment.updatedAt = new Date();
+        if (status === 'CANCELLED') {
+            this.addOutboxEvent(appointment, 'appointment.cancelled');
+        }
         return appointment;
+    }
+
+    private addOutboxEvent(appointment: Appointment, eventType: string) {
+        this.outboxEvents.push({
+            id: randomUUID(),
+            aggregateType: 'Appointment',
+            aggregateId: appointment.id,
+            eventType,
+            payload: {
+                appointmentId: appointment.id,
+                clientId: appointment.clientId,
+                providerId: appointment.providerId,
+                serviceId: appointment.serviceId,
+                startTime: appointment.startTime.toISOString(),
+                endTime: appointment.endTime.toISOString(),
+            },
+            status: 'PENDING',
+            attempts: 0,
+            createdAt: new Date(),
+            processedAt: null,
+        });
     }
 
     async save(appointment: Appointment): Promise<Appointment> {

@@ -3,6 +3,7 @@ import request from 'supertest';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { provisionAndAuthenticate } from '../../test/e2e/provision-user.js';
+import { prisma } from '../../lib/prisma.js';
 
 describe('Cancel Appointment (E2E)', () => {
     beforeAll(async () => {
@@ -70,5 +71,13 @@ describe('Cancel Appointment (E2E)', () => {
             .set('Authorization', `Bearer ${clientAuth.body.data.token}`);
 
         expect(response.status).toEqual(204);
+        const outboxEvents = await prisma.outboxEvent.findMany({
+            where: { aggregateId: appointmentId },
+        });
+        expect(outboxEvents.map(({ eventType }) => eventType).sort()).toEqual([
+            'appointment.created',
+            'appointment.cancelled',
+        ].sort());
+        expect(outboxEvents.every(({ status }) => status === 'PENDING')).toBe(true);
     });
 });
