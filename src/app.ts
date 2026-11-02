@@ -46,7 +46,7 @@ export function buildApp(options: FastifyServerOptions = {}) {
             },
             servers: [{ url: '/', description: 'Current server' }],
             tags: [
-                { name: 'Authentication', description: 'Registration and login' },
+                { name: 'Authentication', description: 'Registration, login, refresh-token rotation, and session management' },
                 { name: 'Profile', description: 'Authenticated user profile' },
                 { name: 'Services', description: 'Service catalog and provider service management' },
                 { name: 'Appointments', description: 'Booking and appointment lifecycle' },
@@ -60,7 +60,7 @@ export function buildApp(options: FastifyServerOptions = {}) {
                         type: 'http',
                         scheme: 'bearer',
                         bearerFormat: 'JWT',
-                        description: 'JWT returned by POST /sessions.',
+                        description: '15-minute access JWT returned by POST /sessions.',
                     },
                 },
             },

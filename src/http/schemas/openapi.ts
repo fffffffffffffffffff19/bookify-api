@@ -92,6 +92,11 @@ export const schemas = {
         properties: { id: { type: 'string', format: 'uuid' } },
         required: ['id'],
     },
+    sessionIdParams: {
+        type: 'object',
+        properties: { sessionId: { type: 'string', format: 'uuid' } },
+        required: ['sessionId'],
+    },
     serviceIdParams: {
         type: 'object',
         properties: { serviceId: { type: 'string', format: 'uuid' } },

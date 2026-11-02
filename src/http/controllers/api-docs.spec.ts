@@ -30,6 +30,11 @@ describe('OpenAPI documentation (E2E)', () => {
         expect(specification.body.paths).toEqual(expect.objectContaining({
             '/users': expect.any(Object),
             '/sessions': expect.any(Object),
+            '/auth/refresh': expect.any(Object),
+            '/auth/logout': expect.any(Object),
+            '/auth/sessions': expect.any(Object),
+            '/auth/sessions/all': expect.any(Object),
+            '/auth/sessions/{sessionId}': expect.any(Object),
             '/me': expect.any(Object),
             '/services': expect.any(Object),
             '/services/public': expect.any(Object),

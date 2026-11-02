@@ -28,9 +28,12 @@ describe('Authenticate (E2E)', () => {
         });
 
         expect(response.status).toEqual(200);
+        expect(response.headers['set-cookie']?.[0]).toContain('bookify_refresh=');
+        expect(response.headers['set-cookie']?.[0]).toContain('HttpOnly');
+        expect(response.body.data.expiresIn).toEqual(900);
         expect(response.body).toEqual(
             expect.objectContaining({
-                data: { token: expect.any(String) },
+                data: expect.objectContaining({ token: expect.any(String) }),
             }),
         );
     });
