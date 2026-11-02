@@ -89,7 +89,15 @@ Run the development server:
 yarn start:dev
 ```
 
-The API listens on [http://localhost:3333](http://localhost:3333) by default. To run both the API and PostgreSQL in containers instead, use `docker compose up --build`; the API container applies migrations on startup.
+The API listens on [http://localhost:3333](http://localhost:3333) by default. This hybrid workflow is the recommended development setup: `tsx watch` reloads the API as source files change, and running Node on the host keeps editor debugging and logs straightforward, while PostgreSQL remains isolated in Docker.
+
+To run both the API and PostgreSQL in containers instead, use:
+
+```bash
+yarn start:docker
+```
+
+This builds the API image, starts both services, and applies migrations when the API container starts. It is useful for checking the containerized setup; source changes require rebuilding the image, so it is less convenient for day-to-day iteration.
 
 ## API Documentation
 

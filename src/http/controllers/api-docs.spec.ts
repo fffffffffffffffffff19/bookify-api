@@ -14,9 +14,12 @@ describe('OpenAPI documentation (E2E)', () => {
     it('serves Swagger UI and an OpenAPI document containing public and protected routes', async () => {
         const ui = await request(app.server).get('/docs');
         const specification = await request(app.server).get('/docs/json');
+        const health = await request(app.server).get('/health');
 
         expect(ui.status).toEqual(200);
         expect(ui.headers['content-type']).toContain('text/html');
+        expect(health.status).toEqual(200);
+        expect(health.body).toEqual({ data: { status: 'ok' } });
         expect(specification.status).toEqual(200);
         expect(specification.body.info).toMatchObject({
             title: 'Bookify API',

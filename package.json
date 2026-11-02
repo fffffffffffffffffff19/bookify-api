@@ -38,10 +38,11 @@
     "vitest-environment-prisma": "file:./prisma/vitest-environment-prisma"
   },
   "scripts": {
+    "start": "node dist/server.cjs",
+    "start:docker": "docker compose up --build",
     "start:dev": "tsx watch src/server.ts",
     "build": "tsup src/server.ts --out-dir dist --no-splitting --format cjs",
     "lint": "oxlint src",
-    "start": "node dist/server.cjs",
     "test": "vitest run --dir src/use-cases",
     "test:watch": "vitest --dir src/use-cases",
     "test:e2e": "vitest run --dir src/http",

@@ -72,7 +72,13 @@ export function buildApp(options: FastifyServerOptions = {}) {
             schema: {
                 tags: ['Health'],
                 summary: 'Check API health',
-                response: { 200: { description: 'API is healthy', type: 'object' } },
+                response: {
+                    200: {
+                        description: 'API is healthy',
+                        type: 'object',
+                        properties: { status: { type: 'string' } },
+                    },
+                },
             },
         }, async () => ({ status: 'ok' }));
     });
