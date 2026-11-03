@@ -5,4 +5,9 @@ export interface UsersRepository {
     findByEmail(email: string): Promise<User | null>;
     create(data: Prisma.UserCreateInput): Promise<User>;
     update(userId: string, data: Prisma.UserUpdateInput): Promise<User>;
+    updateAndRevokeOtherSessions(
+        userId: string,
+        activeSessionId: string | undefined,
+        data: Prisma.UserUpdateInput,
+    ): Promise<User>;
 }

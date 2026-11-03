@@ -8,9 +8,10 @@ import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import path from 'node:path';
 import { mkdirSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { ZodError } from 'zod';
 import { env } from './config/env.js';
-import { closeCacheConnection } from './lib/cache.js';
+import { closeCacheConnection, createRedisClient } from './lib/cache.js';
 import { instrumentHttpRequests, shutdownTelemetry } from './observability/instrumentation.js';
 import { ApplicationError } from './errors/application-error.js';
 import { userRoutes } from './http/routes/users.routes.js';
@@ -26,8 +27,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function buildApp(options: FastifyServerOptions = {}) {
     const app = fastify(options);
+    const rateLimitRedis = createRedisClient();
+    const rateLimitNamespace = `${env.CACHE_KEY_PREFIX}:rate-limit:${env.NODE_ENV === 'test' ? `${randomUUID()}:` : ''}`;
     app.addHook('onClose', closeCacheConnection);
+    app.addHook('onClose', () => rateLimitRedis.disconnect());
     app.addHook('onClose', shutdownTelemetry);
+    app.addHook('onReady', async () => {
+        if (rateLimitRedis.status === 'wait') {
+            await rateLimitRedis.connect();
+        }
+        await rateLimitRedis.ping();
+    });
     instrumentHttpRequests(app);
 
     app.register(fastifyJwt, {
@@ -38,6 +48,8 @@ export function buildApp(options: FastifyServerOptions = {}) {
         global: true,
         max: 100,
         timeWindow: '1 minute',
+        redis: rateLimitRedis,
+        nameSpace: rateLimitNamespace,
         errorResponseBuilder: (_request, context) => ({
             statusCode: 429,
             error: {

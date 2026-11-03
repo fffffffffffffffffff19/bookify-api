@@ -20,7 +20,7 @@ Refresh-token reuse revokes all active sessions for the affected user. Access to
 
 ## Scoped Partner API Keys
 
-An administrator creates a key using `POST /admin/api-keys`, specifying a name, one or more scopes, and optionally an expiration. The plaintext secret is returned once; store it in a secrets manager because only its SHA-256 hash is persisted. Revoke a key with `DELETE /admin/api-keys/:id`.
+An administrator creates a key using `POST /admin/api-keys`, specifying a name, one or more scopes, and optionally an expiration. Keys expire after 90 days by default; a supplied expiration must be in the future and no more than 365 days away. The plaintext secret is returned once; store it in a secrets manager because only its SHA-256 hash is persisted. Revoke a key with `DELETE /admin/api-keys/:id`.
 
 Send the key in the `X-API-Key` request header. Supported scopes are:
 
@@ -30,6 +30,8 @@ Send the key in the `X-API-Key` request header. Supported scopes are:
 | `availability:read` | `GET /partner/services/:serviceId/availability` |
 
 Keys are rejected when missing, invalid, expired, revoked, or lacking the endpoint's required scope. Partner keys do not grant administrator privileges; system-wide appointment exports and key management remain admin-only.
+
+`GET /partner/services` supports bounded pagination with `page` (default `1`) and `perPage` (default `20`, maximum `100`). The response includes the selected services and pagination metadata (`page`, `perPage`, `total`, and `totalPages`).
 
 ## Other API Areas
 

@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.49.2] - 2026-11-03
+
+### Security
+- Login attempts are now limited by a normalized, hashed account identifier in shared Redis storage, preventing distributed IP rotation from bypassing the account limit.
+- Password updates and revocation of other active sessions now commit in one database transaction.
+- Newly issued partner API keys expire after 90 days by default; custom expirations are capped at one year.
+
+### Fixed
+- The general appointment status endpoint now rejects cancellation after an appointment has started.
+- Partner service catalog responses now use bounded pagination with a maximum page size of 100.
+- Exhausted serializable retries during appointment rescheduling now return a booking conflict instead of an internal server error.
+- TypeScript checks explicitly target the project, include all source TypeScript files, and enable additional unused-code, return-path, casing, and switch checks.
+
+### Verification
+- `yarn typecheck` and `yarn lint` passed.
+- `yarn test`: 27 files, 119 tests passed.
+- `yarn test:e2e --reporter=dot`: 27 files, 85 tests passed.
+
 ## [1.49.1] - 2026-11-02
 
 ### Fixed

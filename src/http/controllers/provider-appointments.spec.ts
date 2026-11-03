@@ -98,6 +98,21 @@ describe('Provider Appointment Routes (E2E)', () => {
         expect(response.body.data.appointment.status).toEqual('CANCELLED');
     });
 
+    it('should reject cancellation after an appointment has started', async () => {
+        const { clientToken, appointmentId } = await createAppointmentFixture();
+        await setAppointmentEndTimeInPast(appointmentId);
+
+        const response = await request(app.server)
+            .patch(`/appointments/${appointmentId}/status`)
+            .set('Authorization', `Bearer ${clientToken}`)
+            .send({ status: 'CANCELLED' });
+
+        expect(response.status).toEqual(400);
+        expect(response.body.errorCode).toEqual('PAST_APPOINTMENT');
+        const appointment = await new PrismaAppointmentsRepository().findById(appointmentId);
+        expect(appointment?.status).toEqual('PENDING');
+    });
+
     it('should allow only one concurrent status transition from pending', async () => {
         const { clientToken, appointmentId } = await createAppointmentFixture();
         const responses = await Promise.all([

@@ -41,6 +41,31 @@ export class PrismaServicesRepository implements ServicesRepository {
         }));
     }
 
+    async findPublicCatalogPage(skip: number, take: number) {
+        const [services, total] = await prisma.$transaction([
+            prisma.service.findMany({
+                skip,
+                take,
+                orderBy: [{ title: 'asc' }, { id: 'asc' }],
+                select: {
+                    id: true,
+                    title: true,
+                    description: true,
+                    price: true,
+                    durationInMinutes: true,
+                    imageUrl: true,
+                    user: { select: { id: true, name: true } },
+                },
+            }),
+            prisma.service.count(),
+        ]);
+
+        return {
+            services: services.map(({ user, ...service }) => ({ ...service, provider: user })),
+            total,
+        };
+    }
+
     async findById(id: string) {
         const service = await prisma.service.findUnique({
             where: {

@@ -14,6 +14,7 @@ export interface UpdateUserProfileUseCaseRequest {
     oldPassword?: string;
     newPassword?: string;
     avatarUrl?: string;
+    activeSessionId?: string;
 }
 
 interface UpdateUserProfileUseCaseResponse {
@@ -30,6 +31,7 @@ export class UpdateUserProfileUseCase {
         oldPassword,
         newPassword,
         avatarUrl,
+        activeSessionId,
     }: UpdateUserProfileUseCaseRequest): Promise<UpdateUserProfileUseCaseResponse> {
         const user = await this.usersRepository.findById(userId);
         if (!user) {
@@ -55,7 +57,9 @@ export class UpdateUserProfileUseCase {
             updateData.passwordHash = await hash(newPassword, 10);
         }
 
-        const updatedUser = await this.usersRepository.update(userId, updateData);
+        const updatedUser = newPassword === undefined
+            ? await this.usersRepository.update(userId, updateData)
+            : await this.usersRepository.updateAndRevokeOtherSessions(userId, activeSessionId, updateData);
         return { user: updatedUser };
     }
 }

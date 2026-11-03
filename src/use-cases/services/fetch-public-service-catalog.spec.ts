@@ -39,4 +39,15 @@ describe('Fetch Public Service Catalog Use Case', () => {
         expect(services[1]?.title).toEqual('Yoga');
         expect(services[0]).not.toHaveProperty('userId');
     });
+
+    it('returns a bounded catalog page with pagination metadata', async () => {
+        await repository.create({ title: 'Yoga', price: 35, durationInMinutes: 45, userId: 'provider-2' });
+        await repository.create({ title: 'Massage', price: 50, durationInMinutes: 60, userId: 'provider-1' });
+
+        const result = await sut.execute({ page: 1, perPage: 1 });
+
+        expect(result.services).toHaveLength(1);
+        expect(result.services[0]?.title).toEqual('Massage');
+        expect(result.pagination).toEqual({ page: 1, perPage: 1, total: 2, totalPages: 2 });
+    });
 });

@@ -13,6 +13,7 @@ export interface ServicesRepository {
     update(id: string, data: ServiceUpdateData): Promise<Service>;
     findManyByUserId(userId: string): Promise<Service[]>;
     findPublicCatalog(): Promise<PublicCatalogService[]>;
+    findPublicCatalogPage(skip: number, take: number): Promise<{ services: PublicCatalogService[]; total: number }>;
     findById(id: string): Promise<Service | null>;
     delete(id: string): Promise<void>;
 }

@@ -31,7 +31,7 @@ describe('Update Appointment Status Use Case', () => {
     });
 
     it('allows a client to cancel their own pending appointment', async () => {
-        const appointment = await appointmentsRepository.create(appointmentData(new Date(Date.now() + 60_000)));
+        const appointment = await appointmentsRepository.create(appointmentData(new Date(Date.now() + 60 * 60_000)));
         const result = await sut.execute({
             appointmentId: appointment.id,
             userId: 'client-1',
@@ -53,7 +53,7 @@ describe('Update Appointment Status Use Case', () => {
     });
 
     it('allows admins to cancel any pending appointment', async () => {
-        const appointment = await appointmentsRepository.create(appointmentData(new Date(Date.now() + 60_000)));
+        const appointment = await appointmentsRepository.create(appointmentData(new Date(Date.now() + 60 * 60_000)));
         const result = await sut.execute({
             appointmentId: appointment.id,
             userId: 'admin-1',
@@ -61,6 +61,18 @@ describe('Update Appointment Status Use Case', () => {
             status: 'CANCELLED',
         });
         expect(result.appointment.status).toEqual('CANCELLED');
+    });
+
+    it('rejects cancelling an appointment after its start time', async () => {
+        const appointment = await appointmentsRepository.create(appointmentData(new Date(Date.now() + 60_000)));
+        appointment.startTime = new Date(Date.now() - 60_000);
+
+        await expect(sut.execute({
+            appointmentId: appointment.id,
+            userId: 'client-1',
+            userRole: 'CLIENT',
+            status: 'CANCELLED',
+        })).rejects.toMatchObject({ errorCode: 'PAST_APPOINTMENT' });
     });
 
     it('allows only one concurrent status transition from pending', async () => {

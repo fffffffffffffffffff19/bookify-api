@@ -29,6 +29,11 @@ export class InMemoryServicesRepository implements ServicesRepository {
             }));
     }
 
+    async findPublicCatalogPage(skip: number, take: number) {
+        const services = await this.findPublicCatalog();
+        return { services: services.slice(skip, skip + take), total: services.length };
+    }
+
     async create(data: Prisma.ServiceUncheckedCreateInput): Promise<Service> {
         const service: Service = {
             id: data.id ?? randomUUID(),

@@ -195,6 +195,13 @@ export const schemas = {
         properties: { date: { type: 'string', format: 'date' } },
         required: ['date'],
     },
+    partnerServiceCatalogQuery: {
+        type: 'object',
+        properties: {
+            page: { type: 'integer', minimum: 1, default: 1 },
+            perPage: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+        },
+    },
     appointmentListQuery: {
         type: 'object',
         properties: {

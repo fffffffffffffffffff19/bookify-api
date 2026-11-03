@@ -37,4 +37,23 @@ export class PrismaUsersRepository implements UsersRepository {
             data,
         });
     }
+
+    async updateAndRevokeOtherSessions(
+        userId: string,
+        activeSessionId: string | undefined,
+        data: Prisma.UserUpdateInput,
+    ): Promise<User> {
+        return prisma.$transaction(async (transaction) => {
+            const user = await transaction.user.update({ where: { id: userId }, data });
+            await transaction.session.updateMany({
+                where: {
+                    userId,
+                    revokedAt: null,
+                    ...(activeSessionId ? { id: { not: activeSessionId } } : {}),
+                },
+                data: { revokedAt: new Date() },
+            });
+            return user;
+        });
+    }
 }

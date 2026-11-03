@@ -50,6 +50,7 @@ describe('Update User Profile Use Case', () => {
     it('changes the password after verifying the old password', async () => {
         const { user } = await sut.execute({
             userId,
+            activeSessionId: 'current-session',
             oldPassword: 'old-password',
             newPassword: 'new-password',
         });

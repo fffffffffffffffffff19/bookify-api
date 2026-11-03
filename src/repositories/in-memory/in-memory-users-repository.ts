@@ -52,4 +52,12 @@ export class InMemoryUsersRepository implements UsersRepository {
         this.items[index] = updatedUser;
         return updatedUser;
     }
+
+    async updateAndRevokeOtherSessions(
+        userId: string,
+        _activeSessionId: string | undefined,
+        data: Prisma.UserUpdateInput,
+    ): Promise<User> {
+        return this.update(userId, data);
+    }
 }

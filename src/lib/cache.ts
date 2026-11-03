@@ -2,14 +2,18 @@ import { Redis } from 'ioredis';
 import { env } from '../config/env.js';
 import { CacheService } from '../cache/cache-service.js';
 
-const redisClient = new Redis(env.REDIS_URL, {
-    lazyConnect: true,
-    enableOfflineQueue: false,
-    maxRetriesPerRequest: 1,
-    connectTimeout: 750,
-    commandTimeout: 750,
-    retryStrategy: (attempt: number) => Math.min(attempt * 250, 1000),
-});
+export function createRedisClient() {
+    return new Redis(env.REDIS_URL, {
+        lazyConnect: true,
+        enableOfflineQueue: false,
+        maxRetriesPerRequest: 1,
+        connectTimeout: 750,
+        commandTimeout: 750,
+        retryStrategy: (attempt: number) => Math.min(attempt * 250, 1000),
+    });
+}
+
+const redisClient = createRedisClient();
 
 redisClient.on('error', () => { });
 

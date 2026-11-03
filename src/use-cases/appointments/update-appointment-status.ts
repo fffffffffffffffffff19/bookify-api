@@ -71,6 +71,10 @@ export class UpdateAppointmentStatusUseCase {
             throw new ForbiddenError('Clients may only cancel their own pending appointments.');
         }
 
+        if (status === 'CANCELLED' && appointment.startTime < new Date()) {
+            throw new BusinessRuleError('Cannot cancel a past appointment.', 'PAST_APPOINTMENT');
+        }
+
         if (status === 'COMPLETED' && appointment.endTime > new Date()) {
             throw new BusinessRuleError(
                 'An appointment cannot be completed before its scheduled end time.',

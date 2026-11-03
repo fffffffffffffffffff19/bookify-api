@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { createHash } from 'node:crypto';
 import { register } from '../controllers/register.js';
 import { authenticate } from '../controllers/authenticate.js';
 import { profile } from '../controllers/profile.js';
@@ -33,7 +34,7 @@ export async function userRoutes(app: FastifyInstance) {
                 keyGenerator: (request) => {
                     const body = request.body as { email?: unknown } | null;
                     const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : 'unknown';
-                    return `${request.ip}:${email}`;
+                    return `account:${createHash('sha256').update(email).digest('hex')}`;
                 },
             },
         },

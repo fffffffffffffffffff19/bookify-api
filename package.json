@@ -1,6 +1,6 @@
 {
   "name": "bookify-api",
-  "version": "1.49.1",
+  "version": "1.49.2",
   "main": "./dist/server.cjs",
   "type": "module",
   "packageManager": "yarn@1.22.22",
@@ -61,7 +61,7 @@
     "start:worker:dev": "tsx watch src/worker.ts",
     "build": "tsup src/server.ts src/worker.ts --out-dir dist --no-splitting --format cjs",
     "lint": "oxlint src",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --project ./tsconfig.json",
     "release": "semantic-release",
     "test": "vitest run --project unit",
     "test:watch": "vitest --project unit",

@@ -26,6 +26,7 @@ export async function servicesRoutes(app: FastifyInstance) {
             tags: ['Services'],
             summary: 'Read the public service catalog using a scoped partner API key',
             security: [{ ApiKeyAuth: [] }],
+            querystring: schemas.partnerServiceCatalogQuery,
             response: responses(200, 'Partner service catalog'),
         },
     }, fetchPartnerServices);
