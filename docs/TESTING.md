@@ -9,14 +9,14 @@ yarn install --frozen-lockfile
 yarn db:generate
 ```
 
-PostgreSQL is required for end-to-end tests. Start the Compose database and apply migrations:
+PostgreSQL and Redis are required for end-to-end tests. PostgreSQL backs the isolated Prisma test schemas; Redis provides the shared rate-limit store used by the app. Start both Compose services and apply migrations:
 
 ```bash
-docker compose up -d postgres
+docker compose up -d postgres redis
 yarn db:migrate
 ```
 
-The E2E Vitest environment uses `DATABASE_URL` and `JWT_SECRET`; `.env.example` provides local defaults. E2E tests run serially with one worker to keep database state predictable.
+The E2E Vitest environment uses `DATABASE_URL`, `REDIS_URL`, and `JWT_SECRET`; `.env.example` provides local defaults. Ensure the database URL points at the migrated database and Redis is reachable before testing. E2E tests run serially with one worker to keep database state predictable. Each test app uses a separate Redis rate-limit namespace.
 
 ## Unit Tests
 
@@ -58,4 +58,4 @@ yarn lint
 yarn build
 ```
 
-`yarn typecheck` runs `tsc --noEmit` with the repository's strict TypeScript configuration. CI also runs Prisma generation, migrations, both test projects, and the OpenAPI contract check. See [Deployment](DEPLOYMENT.md#continuous-integration) for the workflow sequence.
+`yarn typecheck` runs `tsc --project ./tsconfig.json`. The config checks every TypeScript file under `src/`, including specs, with strict checking and additional unused-code, return-path, casing, and switch checks; emission is disabled in the config. CI also runs Prisma generation, migrations, both test projects, and the OpenAPI contract check. See [Deployment](DEPLOYMENT.md#continuous-integration) for the workflow sequence and its current Redis prerequisite.

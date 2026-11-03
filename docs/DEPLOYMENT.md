@@ -2,7 +2,7 @@
 
 ## Environment Setup
 
-Copy `.env.example` to `.env` for local development. The API requires `DATABASE_URL` and `JWT_SECRET`; Redis defaults to `redis://localhost:6379`. The Compose network uses the service hostnames `postgres` and `redis`, which are already configured in `docker-compose.yml`.
+Copy `.env.example` to `.env` for local development. The API requires `DATABASE_URL` and `JWT_SECRET`; Redis defaults to `redis://localhost:6379` and is required for caching, shared rate limiting, and the worker queue. The API checks Redis connectivity before becoming ready. The Compose network uses the service hostnames `postgres` and `redis`, which are already configured in `docker-compose.yml`.
 
 Useful settings include:
 
@@ -11,7 +11,7 @@ Useful settings include:
 | `NODE_ENV` | Runtime environment | `development` |
 | `PORT` | HTTP port | `3333` |
 | `DATABASE_URL` | PostgreSQL connection | Required |
-| `REDIS_URL` | Redis connection for cache and worker | `redis://localhost:6379` |
+| `REDIS_URL` | Redis connection for cache, shared rate limits, and worker queue | `redis://localhost:6379` |
 | `JWT_SECRET` | JWT signing secret | Required |
 | `UPLOAD_DIR` | Local upload storage directory | `uploads` |
 | `PAYMENT_PROVIDER` | `mock` or `stripe` gateway | `mock` |
@@ -38,7 +38,7 @@ Telemetry is opt-in. Set `OTEL_ENABLED=true` and point `OTEL_EXPORTER_OTLP_ENDPO
 
 ## Continuous Integration
 
-The [CI workflow](../.github/workflows/ci.yml) runs for pushes and pull requests targeting `main`. It provisions PostgreSQL, installs the locked Yarn dependencies, generates Prisma Client, runs typecheck, lint, and build, applies migrations, then executes unit tests, E2E tests, and the OpenAPI contract check.
+The [CI workflow](../.github/workflows/ci.yml) runs for pushes and pull requests targeting `main`. It provisions PostgreSQL, installs the locked Yarn dependencies, generates Prisma Client, runs typecheck, lint, and build, applies migrations, then executes unit tests, E2E tests, and the OpenAPI contract check. **Current workflow gap:** E2E tests now require Redis for the shared rate-limit backend, but the workflow currently provisions PostgreSQL only and does not set `REDIS_URL`; add a Redis service and configure its URL before relying on the E2E CI job.
 
 ## Automated Releases
 

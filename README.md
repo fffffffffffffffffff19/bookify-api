@@ -15,7 +15,8 @@ Bookify is a production-minded REST API for service discovery and appointment bo
 
 - **Reliable booking:** serializable transactions protect appointment creation and rescheduling from conflicting requests.
 - **Durable async work:** appointment changes and notification events are committed together through a transactional outbox.
-- **Practical security:** short-lived JWT access, rotating refresh-token sessions, scoped partner keys, and an append-only audit trail.
+- **Practical security:** short-lived JWT access, rotating refresh-token sessions, atomic session revocation on password changes, shared account-based login throttling, expiring scoped partner keys, and an append-only audit trail.
+- **Partner integration:** scoped API keys expose a paginated service catalog and public availability without granting administrator access.
 - **Operational visibility:** Redis read caching, OpenTelemetry traces and metrics, and streaming administrator reports.
 
 ## Quick Start
@@ -29,7 +30,7 @@ yarn install --frozen-lockfile
 yarn start:docker
 ```
 
-The API is available at [http://localhost:3333](http://localhost:3333); interactive API docs are at [http://localhost:3333/docs](http://localhost:3333/docs). Compose starts PostgreSQL, Redis, the API, and the notification worker; the API container applies database migrations at startup.
+The API is available at [http://localhost:3333](http://localhost:3333); interactive API docs are at [http://localhost:3333/docs](http://localhost:3333/docs). Compose starts PostgreSQL, Redis, the API, and the notification worker; Redis backs caching, shared rate limits, and the job queue. The API container applies database migrations at startup and waits for Redis before accepting requests.
 
 For host-based development with hot reload, install Node.js 26, then run `yarn install --frozen-lockfile` and copy `.env.example` to `.env`. Start dependencies with `docker compose up -d postgres redis`, generate Prisma Client, and apply migrations with `yarn db:generate` and `yarn db:migrate`. Start the API and worker in separate terminals with `yarn start:dev` and `yarn start:worker:dev`.
 

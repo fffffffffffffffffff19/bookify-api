@@ -16,9 +16,11 @@ Login issues a 15-minute bearer access token and a seven-day refresh token in an
 
 Refresh rotates the token transactionally: the old token is consumed, a new hash is stored, and session usage and expiry are updated. Reuse of an already-consumed token revokes all active sessions for that user. Users can list active sessions, revoke one session, or revoke all sessions. Access-token validation also checks that the associated session remains active.
 
+Password changes update the password hash and revoke every other active session in one Prisma transaction. The current authenticated session is preserved; if the request has no active session identifier, the transaction revokes all sessions.
+
 ## Redis Caching
 
-Redis caches the public service catalog for 60 seconds and service/date availability for 30 seconds by default. Keys are namespaced with `CACHE_KEY_PREFIX` (`bookify` by default). Service changes invalidate the catalog and relevant availability; booking changes invalidate the affected service/date; business-hours changes invalidate availability entries.
+Redis caches the public service catalog for 60 seconds and service/date availability for 30 seconds by default. It also backs shared global and account-based login rate limits, so all API instances use the same counters. Keys are namespaced with `CACHE_KEY_PREFIX` (`bookify` by default). Service changes invalidate the catalog and relevant availability; booking changes invalidate the affected service/date; business-hours changes invalidate availability entries.
 
 Pattern invalidation iterates with `SCAN`, avoiding a blocking keyspace-wide `KEYS` operation. Cache reads, writes, and invalidations fail open: database-backed requests continue if Redis is unavailable, with TTLs acting as an invalidation safety net. Configure `REDIS_URL`, `CACHE_KEY_PREFIX`, `SERVICE_CATALOG_CACHE_TTL_SECONDS`, and `SERVICE_AVAILABILITY_CACHE_TTL_SECONDS` through the environment.
 
@@ -30,8 +32,8 @@ Sensitive profile, business-hours, and session-revocation actions are recorded a
 
 - Zod validates request contracts and environment configuration.
 - Role checks are combined with resource ownership checks; public registration creates client accounts.
-- Global rate limiting is supplemented with tighter login and registration limits.
-- Appointment conflict checks and writes use PostgreSQL `SERIALIZABLE` transactions, retrying recognized serialization conflicts up to three attempts.
+- Global rate limiting is supplemented with tighter login and registration limits. Login attempts are keyed by a normalized, hashed account identifier, independently of source IP; Redis must be available for the API to become ready.
+- Appointment conflict checks and writes use PostgreSQL `SERIALIZABLE` transactions, retrying recognized serialization conflicts up to three attempts. Exhausted retries return the normal booking-conflict response instead of an internal server error.
 - Refresh tokens and partner API keys are stored as hashes; partner key secrets are shown only once.
 - Image uploads are limited to one file and 5 MB, and the declared image type is checked against file-signature detection.
 - Stripe webhooks validate signatures against the original request body and deduplicate provider event IDs.
