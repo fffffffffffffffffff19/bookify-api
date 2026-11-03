@@ -198,6 +198,12 @@ yarn build
 
 GitHub Actions runs on pushes and pull requests targeting `main`. The workflow provisions PostgreSQL, generates Prisma Client, applies migrations, and runs both test suites. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
+## Automated Releases
+
+Every push to `main` runs type checking, lint, build, Prisma migrations, unit and E2E tests, and the OpenAPI contract check before release automation starts. The first successful release run creates the `v2.0.0` baseline from the manifest version and generates GitHub release notes from the accumulated commit history; this prevents the pre-release history from being misinterpreted as a new release. Later releases are calculated by semantic-release from Conventional Commit messages, update and commit `package.json`, create `vX.Y.Z` tags, and publish GitHub Releases. No npm package is published and no changelog file is maintained.
+
+Use `feat:` for minor releases, `fix:` or `perf:` for patch releases, and a `!` marker or `BREAKING CHANGE:` footer for major releases. Other commit types do not trigger a release unless they declare a breaking change. The workflow requires GitHub Actions to have repository contents write permission; branch protection must allow the release bot to push the version commit to `main`.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
