@@ -9,6 +9,7 @@ import path from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { ZodError } from 'zod';
 import { env } from './config/env.js';
+import { closeCacheConnection } from './lib/cache.js';
 import { ApplicationError } from './errors/application-error.js';
 import { userRoutes } from './http/routes/users.routes.js';
 import { servicesRoutes } from './http/routes/services.routes.js';
@@ -23,6 +24,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function buildApp(options: FastifyServerOptions = {}) {
     const app = fastify(options);
+    app.addHook('onClose', closeCacheConnection);
 
     app.register(fastifyJwt, {
         secret: env.JWT_SECRET,

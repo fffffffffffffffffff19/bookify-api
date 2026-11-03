@@ -1,5 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { invalidateAppointmentAvailability } from '../../lib/cache.js';
 import { makeCancelAppointmentUseCase } from '../../use-cases/factories/make-cancel-appointment-use-case.js';
 
 export async function cancelAppointment(request: FastifyRequest, reply: FastifyReply) {
@@ -11,10 +12,11 @@ export async function cancelAppointment(request: FastifyRequest, reply: FastifyR
 
     const cancelAppointmentUseCase = makeCancelAppointmentUseCase();
 
-    await cancelAppointmentUseCase.execute({
+    const { appointment } = await cancelAppointmentUseCase.execute({
         appointmentId: id,
         userId: request.user.sub,
     });
+    await invalidateAppointmentAvailability(appointment.serviceId, appointment.startTime);
 
     return reply.status(204).send();
 }

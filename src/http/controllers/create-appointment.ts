@@ -1,5 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { invalidateAppointmentAvailability } from '../../lib/cache.js';
 import { makeCreateAppointmentUseCase } from '../../use-cases/factories/make-create-appointment-use-case.js';
 
 export async function createAppointment(request: FastifyRequest, reply: FastifyReply) {
@@ -17,6 +18,7 @@ export async function createAppointment(request: FastifyRequest, reply: FastifyR
         serviceId,
         startTime,
     });
+    await invalidateAppointmentAvailability(appointment.serviceId, appointment.startTime);
 
     return reply.status(201).send({
         appointment,

@@ -17,7 +17,7 @@ export default defineConfig({
             {
                 test: {
                     name: 'unit',
-                    include: ['src/use-cases/**/*.spec.ts', 'src/storage/**/*.spec.ts'],
+                    include: ['src/use-cases/**/*.spec.ts', 'src/storage/**/*.spec.ts', 'src/cache/**/*.spec.ts'],
                 },
             },
             {

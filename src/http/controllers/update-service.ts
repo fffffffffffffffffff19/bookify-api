@@ -1,5 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { invalidateServiceCaches } from '../../lib/cache.js';
 import { makeUpdateServiceUseCase } from '../../use-cases/factories/make-update-service-use-case.js';
 
 export async function updateService(request: FastifyRequest, reply: FastifyReply) {
@@ -27,6 +28,7 @@ export async function updateService(request: FastifyRequest, reply: FastifyReply
         price,
         durationInMinutes,
     });
+    await invalidateServiceCaches(service.id);
 
     return reply.status(200).send({
         service,

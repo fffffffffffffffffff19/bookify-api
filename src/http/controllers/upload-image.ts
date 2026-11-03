@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Service } from '@prisma/client';
+import { invalidateServiceCaches } from '../../lib/cache.js';
 import { storage } from '../../storage/index.js';
 import { validateImageUpload } from '../../storage/image-upload.js';
 import { makeUpdateServiceUseCase } from '../../use-cases/factories/make-update-service-use-case.js';
@@ -56,6 +57,7 @@ export async function uploadServiceImage(request: FastifyRequest, reply: Fastify
         await storage.delete(stored.key);
         throw error;
     }
+    await invalidateServiceCaches(service.id);
 
     return reply.status(200).send({ service });
 }

@@ -1,5 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { invalidateServiceCaches } from '../../lib/cache.js';
 import { makeCreateServiceUseCase } from '../../use-cases/factories/make-create-service-use-case.js';
 
 export async function createService(request: FastifyRequest, reply: FastifyReply) {
@@ -21,6 +22,7 @@ export async function createService(request: FastifyRequest, reply: FastifyReply
         durationInMinutes,
         userId: request.user.sub,
     });
+    await invalidateServiceCaches(service.id);
 
     return reply.status(201).send({
         service,

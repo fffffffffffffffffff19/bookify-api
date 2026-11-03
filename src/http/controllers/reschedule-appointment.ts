@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import { invalidateServiceAvailability } from '../../lib/cache.js';
 import { makeRescheduleAppointmentUseCase } from '../../use-cases/factories/make-reschedule-appointment-use-case.js';
 
 const rescheduleAppointmentParamsSchema = z.object({
@@ -20,6 +21,7 @@ export async function rescheduleAppointment(request: FastifyRequest, reply: Fast
         userRole: request.user.role,
         startTime,
     });
+    await invalidateServiceAvailability(appointment.serviceId);
 
     return reply.status(200).send({ appointment });
 }

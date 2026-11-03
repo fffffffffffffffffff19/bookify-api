@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import { invalidateAllServiceAvailability } from '../../lib/cache.js';
 import { auditActions } from '../../audit/audit-logger.js';
 import { auditRequestContext } from '../../audit/audit-request-context.js';
 import { makeAuditLogger } from '../../use-cases/factories/make-audit-logger.js';
@@ -23,6 +24,7 @@ export async function updateBusinessHours(request: FastifyRequest, reply: Fastif
     const before = await makeFetchBusinessHoursUseCase().execute();
     const useCase = makeUpdateBusinessHoursUseCase();
     const businessHours = await useCase.execute(settings);
+    await invalidateAllServiceAvailability();
     await makeAuditLogger().log({
         ...auditRequestContext(request),
         action: auditActions.businessHoursUpdated,

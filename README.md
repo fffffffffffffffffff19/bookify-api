@@ -19,6 +19,7 @@ Bookify is a production-minded REST API for service discovery and appointment op
 - **Concurrency-safe bookings:** appointment conflict checks and inserts run in Prisma transactions at PostgreSQL `SERIALIZABLE` isolation. Serialization conflicts are retried, and competing bookings receive `409 Conflict`.
 - **Transactional appointment notifications:** appointment creation and cancellation write an outbox event in the same serializable transaction; a polling BullMQ worker delivers mock notifications with bounded exponential retries.
 - **Payment checkout and webhooks:** appointments use a trusted service price to create Stripe Checkout Sessions (or local mock sessions); signed Stripe events update payment state transactionally and are deduplicated by provider event ID.
+- **Redis read caching:** the public service catalog and date-specific availability use short-lived, namespaced cache entries; cache outages fall back to PostgreSQL without failing public reads.
 - **Role-based access control:** `CLIENT`, `PROVIDER`, and `ADMIN` roles are enforced alongside resource ownership rules. Public registration creates client accounts.
 - **Refresh-token sessions:** 15-minute bearer access tokens pair with seven-day `HttpOnly` refresh cookies. Refresh tokens rotate on use, are stored as hashes, and replay revokes all active sessions for the affected user.
 - **Immutable audit trail:** sensitive profile, business-hours, and session-revocation events are appended with actor, request, target, and change metadata; administrators can filter and paginate the history.
@@ -170,6 +171,8 @@ Appointment listing supports `page`, `perPage`, `status`, `from`, and `to`. Time
 The admin audit trail supports `page`, `perPage`, `action`, `actorId`, `from`, and `to`; date bounds are inclusive and `perPage` defaults to 20 with a maximum of 100. Audit entries are created through a centralized append-only repository contract and expose no application-level update or delete operation. Password values and other credentials are never included in event payloads.
 
 Payment initialization reads the appointment's price from its service record; clients cannot provide or override the amount. Set `PAYMENT_PROVIDER=mock` for local development, or configure `PAYMENT_PROVIDER=stripe`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET` for Stripe Checkout. Set `PAYMENT_SUCCESS_URL`, `PAYMENT_CANCEL_URL`, and `PAYMENT_CURRENCY` as needed. Production requires the Stripe provider and both Stripe secrets. The public `POST /webhooks/stripe` endpoint verifies Stripe's timestamped signature against the unmodified request body; duplicate event IDs are accepted but not applied twice. For local Stripe testing, forward events with `stripe listen --forward-to localhost:3333/webhooks/stripe`.
+
+The Redis cache uses `REDIS_URL` and `CACHE_KEY_PREFIX` (default `bookify`). `SERVICE_CATALOG_CACHE_TTL_SECONDS` defaults to 60 seconds and `SERVICE_AVAILABILITY_CACHE_TTL_SECONDS` to 30 seconds. Service mutations invalidate the catalog and affected service availability; appointment slot changes invalidate the affected service/date key, and business-hours changes clear all availability entries. Pattern invalidation uses Redis `SCAN`, and cache reads, writes, and invalidations fail open so database-backed reads and mutations continue when Redis is unavailable.
 
 ## Testing and Build
 

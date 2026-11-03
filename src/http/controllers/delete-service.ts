@@ -1,5 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { invalidateServiceCaches } from '../../lib/cache.js';
 import { makeDeleteServiceUseCase } from '../../use-cases/factories/make-delete-service-use-case.js';
 
 export async function deleteService(request: FastifyRequest, reply: FastifyReply) {
@@ -15,6 +16,7 @@ export async function deleteService(request: FastifyRequest, reply: FastifyReply
         serviceId: id,
         userId: request.user.sub,
     });
+    await invalidateServiceCaches(id);
 
     return reply.status(204).send();
 }
