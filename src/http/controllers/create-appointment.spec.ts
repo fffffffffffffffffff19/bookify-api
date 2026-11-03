@@ -62,7 +62,7 @@ describe('Create Appointment (E2E)', () => {
             .set('Authorization', `Bearer ${clientAuth.body.data.token}`)
             .send({
                 serviceId,
-                startTime: appointmentDate.toISOString(),
+                startTime: appointmentDate.toISOString().replace(/Z$/, '+00:00'),
             });
 
         expect(response.status).toEqual(201);

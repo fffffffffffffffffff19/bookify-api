@@ -7,7 +7,7 @@ export async function createService(request: FastifyRequest, reply: FastifyReply
     const createServiceBodySchema = z.object({
         title: z.string(),
         description: z.string().optional(),
-        price: z.number(),
+        price: z.number().positive(),
         durationInMinutes: z.number().int().positive(),
     });
 

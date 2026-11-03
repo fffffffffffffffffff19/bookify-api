@@ -15,14 +15,14 @@ const pendingPayment = {
     currency: 'usd',
 } as unknown as Payment;
 
-function makePaymentsRepository(payment = pendingPayment): PaymentsRepository {
+function makePaymentsRepository(payment = pendingPayment, servicePrice = '12.50'): PaymentsRepository {
     return {
         findPayableAppointment: async () => ({
             id: 'appointment-id',
             clientId: 'client-id',
             status: 'PENDING',
             paymentStatus: 'PENDING',
-            service: { price: { toString: () => '12.50' } as never },
+            service: { price: { toString: () => servicePrice } as never },
         }),
         getOrCreatePendingPayment: async () => payment,
         attachCheckoutSession: async (_paymentId, providerPaymentId, checkoutUrl) => ({
@@ -58,6 +58,48 @@ describe('Initialize Payment Use Case', () => {
             checkoutUrl: 'https://checkout.example/session',
             payment: { providerPaymentId: 'mock-session' },
         });
+    });
+
+    it('uses zero-decimal currency units for JPY', async () => {
+        const gatewayRequests: unknown[] = [];
+        const gateway: PaymentGateway = {
+            provider: 'MOCK',
+            createCheckoutSession: async (input) => {
+                gatewayRequests.push(input);
+                return { providerPaymentId: 'mock-session', checkoutUrl: 'https://checkout.example/session' };
+            },
+        };
+        const useCase = new InitializePaymentUseCase(makePaymentsRepository(pendingPayment, '1250'), gateway, 'jpy');
+
+        await useCase.execute({ appointmentId: 'appointment-id', userId: 'client-id' });
+
+        expect(gatewayRequests).toEqual([{
+            paymentId: 'payment-id',
+            appointmentId: 'appointment-id',
+            amountMinorUnits: 1250,
+            currency: 'jpy',
+        }]);
+    });
+
+    it('uses Stripe legacy two-decimal units for ISK', async () => {
+        const gatewayRequests: unknown[] = [];
+        const gateway: PaymentGateway = {
+            provider: 'MOCK',
+            createCheckoutSession: async (input) => {
+                gatewayRequests.push(input);
+                return { providerPaymentId: 'mock-session', checkoutUrl: 'https://checkout.example/session' };
+            },
+        };
+        const useCase = new InitializePaymentUseCase(makePaymentsRepository(pendingPayment, '1250'), gateway, 'isk');
+
+        await useCase.execute({ appointmentId: 'appointment-id', userId: 'client-id' });
+
+        expect(gatewayRequests).toEqual([{
+            paymentId: 'payment-id',
+            appointmentId: 'appointment-id',
+            amountMinorUnits: 125000,
+            currency: 'isk',
+        }]);
     });
 
     it('rejects users who do not own the appointment', async () => {

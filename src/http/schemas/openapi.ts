@@ -113,7 +113,7 @@ export const schemas = {
         properties: {
             name: { type: 'string' },
             email: { type: 'string', format: 'email' },
-            password: { type: 'string', minLength: 6, format: 'password' },
+            password: { type: 'string', minLength: 8, format: 'password' },
             phone: { type: 'string' },
         },
         required: ['name', 'email', 'password'],
@@ -142,7 +142,7 @@ export const schemas = {
             name: { type: 'string', minLength: 2 },
             email: { type: 'string', format: 'email' },
             oldPassword: { type: 'string', minLength: 6, format: 'password' },
-            newPassword: { type: 'string', minLength: 6, format: 'password' },
+            newPassword: { type: 'string', minLength: 8, format: 'password' },
         },
     },
     createServiceBody: {
@@ -150,7 +150,7 @@ export const schemas = {
         properties: {
             title: { type: 'string' },
             description: { type: 'string' },
-            price: { type: 'number', minimum: 0 },
+            price: { type: 'number', exclusiveMinimum: 0 },
             durationInMinutes: { type: 'integer', minimum: 1 },
         },
         required: ['title', 'price', 'durationInMinutes'],
@@ -160,7 +160,7 @@ export const schemas = {
         properties: {
             title: { type: 'string' },
             description: { type: 'string' },
-            price: { type: 'number', minimum: 0 },
+            price: { type: 'number', exclusiveMinimum: 0 },
             durationInMinutes: { type: 'integer', minimum: 1 },
         },
     },

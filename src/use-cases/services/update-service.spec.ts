@@ -28,7 +28,7 @@ describe('Update Service Use Case', () => {
         });
 
         expect(service.title).toEqual('VIP Haircut');
-        expect(service.price).toEqual(80);
+        expect(service.price.toString()).toEqual('80');
     });
 
     it('should not be able to update a service from another provider', async () => {

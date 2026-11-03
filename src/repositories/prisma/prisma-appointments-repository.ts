@@ -50,9 +50,8 @@ export class PrismaAppointmentsRepository implements AppointmentsRepository {
                     isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
                 });
             } catch (error) {
-                if (!isSerializationConflict(error) || attempt === 2) {
-                    throw error;
-                }
+                if (!isSerializationConflict(error)) throw error;
+                if (attempt === 2) return null;
             }
         }
 
@@ -64,6 +63,7 @@ export class PrismaAppointmentsRepository implements AppointmentsRepository {
             where: {
                 serviceId,
                 startTime,
+                status: { not: 'CANCELLED' },
             },
         });
 

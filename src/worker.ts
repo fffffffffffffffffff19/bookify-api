@@ -33,9 +33,15 @@ const worker = new Worker<OutboxJob>(
     { connection, concurrency: 5 },
 );
 
-worker.on('failed', async (job, error) => {
+worker.on('failed', (job, error) => {
     if (job) {
-        await markNotificationFailedAfterRetries(job.data.eventId, job.attemptsMade, repository);
+        void markNotificationFailedAfterRetries(job.data.eventId, job.attemptsMade, repository).catch((markError) => {
+            console.error('Failed to update outbox event after notification retries', {
+                eventId: job.data.eventId,
+                attemptsMade: job.attemptsMade,
+                error: markError,
+            });
+        });
     }
     console.error('Appointment notification job failed', {
         eventId: job?.data.eventId,
@@ -71,8 +77,13 @@ console.info('Appointment notification worker started');
 
 const shutdown = async () => {
     clearInterval(interval);
-    await Promise.all([worker.close(), queue.close(), prisma.$disconnect()]);
-    process.exit(0);
+    try {
+        await Promise.all([worker.close(), queue.close(), prisma.$disconnect()]);
+        process.exit(0);
+    } catch (error) {
+        console.error('Failed to shut down appointment notification worker cleanly', error);
+        process.exitCode = 1;
+    }
 };
 
 process.once('SIGINT', () => void shutdown());

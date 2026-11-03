@@ -45,6 +45,7 @@ export class InMemoryUsersRepository implements UsersRepository {
             email: typeof data.email === 'string' ? data.email : existingUser.email,
             passwordHash:
                 typeof data.passwordHash === 'string' ? data.passwordHash : existingUser.passwordHash,
+            avatarUrl: typeof data.avatarUrl === 'string' ? data.avatarUrl : existingUser.avatarUrl,
             updatedAt: new Date(),
         };
 

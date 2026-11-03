@@ -63,6 +63,17 @@ describe('Create Appointment Use Case', () => {
         ).rejects.toThrow('Appointments must be within business hours (08:00 - 18:00).');
     });
 
+    it('should reject a service that ends on the following day', async () => {
+        await servicesRepository.update('service-1', { durationInMinutes: 900 });
+        const startTime = nextWeekdayAt(17);
+
+        await expect(sut.execute({
+            clientId: 'client-1',
+            serviceId: 'service-1',
+            startTime,
+        })).rejects.toThrow('Appointments must be within business hours (08:00 - 18:00).');
+    });
+
     it('should not be able to create appointments on non-working days', async () => {
         const startTime = new Date();
         while (startTime.getDay() !== 6 && startTime.getDay() !== 0) {

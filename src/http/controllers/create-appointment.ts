@@ -6,7 +6,7 @@ import { makeCreateAppointmentUseCase } from '../../use-cases/factories/make-cre
 export async function createAppointment(request: FastifyRequest, reply: FastifyReply) {
     const createAppointmentBodySchema = z.object({
         serviceId: z.string().uuid(),
-        startTime: z.string().datetime().transform((val) => new Date(val)),
+        startTime: z.string().datetime({ offset: true }).transform((val) => new Date(val)),
     });
 
     const { serviceId, startTime } = createAppointmentBodySchema.parse(request.body);

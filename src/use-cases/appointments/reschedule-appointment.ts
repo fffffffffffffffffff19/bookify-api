@@ -47,7 +47,7 @@ export class RescheduleAppointmentUseCase {
             throw new ForbiddenError();
         }
 
-        if (appointment.status === 'CANCELLED' || appointment.status === 'COMPLETED') {
+        if (appointment.status !== 'PENDING') {
             throw new BusinessRuleError('This appointment cannot be rescheduled.', 'APPOINTMENT_NOT_RESCHEDULABLE');
         }
 

@@ -80,6 +80,19 @@ describe('Reschedule Appointment Use Case', () => {
         })).rejects.toBeInstanceOf(ForbiddenError);
     });
 
+    it('rejects confirmed appointments as non-reschedulable', async () => {
+        const appointment = await appointmentsRepository.findById(appointmentId);
+        if (!appointment) throw new Error('Expected the appointment fixture to exist.');
+        appointment.status = 'CONFIRMED';
+
+        await expect(sut.execute({
+            appointmentId,
+            userId: 'client-1',
+            userRole: 'CLIENT',
+            startTime: nextWeekdayAt(12),
+        })).rejects.toMatchObject({ errorCode: 'APPOINTMENT_NOT_RESCHEDULABLE' });
+    });
+
     it('excludes the current appointment from its own conflict lookup', async () => {
         const { appointment } = await sut.execute({
             appointmentId,

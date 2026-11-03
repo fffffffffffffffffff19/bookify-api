@@ -1,4 +1,4 @@
-import type { Payment } from '@prisma/client';
+import { Prisma, type Payment } from '@prisma/client';
 import { BusinessRuleError, ForbiddenError, ResourceNotFoundError } from '../../errors/application-error.js';
 import type { PaymentsRepository } from '../../repositories/payments-repository.js';
 import type { PaymentGateway } from '../../payments/payment-gateway.js';
@@ -11,6 +11,26 @@ interface InitializePaymentRequest {
 interface InitializePaymentResponse {
     payment: Payment;
     checkoutUrl: string;
+}
+
+function toMinorUnits(amount: string, currency: string): number {
+    const currencyCode = currency.toLowerCase();
+    const fractionDigits = ['isk', 'ugx'].includes(currencyCode)
+        ? 2
+        : new Intl.NumberFormat('en', {
+            style: 'currency',
+            currency,
+        }).resolvedOptions().maximumFractionDigits ?? 2;
+    const scaledAmount = new Prisma.Decimal(amount)
+        .mul(10 ** fractionDigits)
+        .toDecimalPlaces(0, Prisma.Decimal.ROUND_HALF_UP);
+    const minorUnits = scaledAmount.toNumber();
+
+    if (!Number.isSafeInteger(minorUnits) || !scaledAmount.isPositive()) {
+        throw new BusinessRuleError('The appointment price must be greater than zero.', 'INVALID_PAYMENT_AMOUNT');
+    }
+
+    return minorUnits;
 }
 
 export class InitializePaymentUseCase {
@@ -32,10 +52,7 @@ export class InitializePaymentUseCase {
         }
 
         const amount = appointment.service.price.toString();
-        const amountMinorUnits = Math.round(Number(amount) * 100);
-        if (!Number.isSafeInteger(amountMinorUnits) || amountMinorUnits <= 0) {
-            throw new BusinessRuleError('The appointment price must be greater than zero.', 'INVALID_PAYMENT_AMOUNT');
-        }
+        const amountMinorUnits = toMinorUnits(amount, this.currency);
 
         const payment = await this.paymentsRepository.getOrCreatePendingPayment({
             appointmentId,

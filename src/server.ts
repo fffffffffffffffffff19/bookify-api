@@ -11,4 +11,21 @@ const start = async () => {
     }
 };
 
+let shuttingDown = false;
+const shutdown = async (signal: NodeJS.Signals) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    app.log.info(`Received ${signal}; closing HTTP server`);
+
+    try {
+        await app.close();
+    } catch (error) {
+        app.log.error(error, 'Failed to close HTTP server cleanly');
+        process.exitCode = 1;
+    }
+};
+
+process.once('SIGINT', () => void shutdown('SIGINT'));
+process.once('SIGTERM', () => void shutdown('SIGTERM'));
+
 start();

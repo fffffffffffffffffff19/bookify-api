@@ -30,6 +30,11 @@ describe('Update User Profile Use Case', () => {
         expect(user.email).toBe('new@example.com');
     });
 
+    it('updates the avatar URL', async () => {
+        const { user } = await sut.execute({ userId, avatarUrl: '/uploads/avatars/avatar.png' });
+        expect(user.avatarUrl).toBe('/uploads/avatars/avatar.png');
+    });
+
     it('rejects an email already used by another user', async () => {
         await usersRepository.create({
             id: 'user-2',

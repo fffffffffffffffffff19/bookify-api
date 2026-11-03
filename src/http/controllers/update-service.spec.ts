@@ -43,4 +43,23 @@ describe('Update Service (E2E)', () => {
 
         expect(response.status).toEqual(200);
     });
+
+    it('rejects a nonpositive price', async () => {
+        const { token } = await provisionAndAuthenticate(app, 'PROVIDER');
+        await request(app.server)
+            .post('/services')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ title: 'Consultation', price: 50, durationInMinutes: 30 });
+        const services = await request(app.server)
+            .get('/services')
+            .set('Authorization', `Bearer ${token}`);
+        const serviceId = services.body.data.services[0].id as string;
+
+        const response = await request(app.server)
+            .put(`/services/${serviceId}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({ price: 0 });
+
+        expect(response.status).toEqual(400);
+    });
 });

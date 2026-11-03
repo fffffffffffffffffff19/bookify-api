@@ -1,6 +1,6 @@
 {
   "name": "bookify-api",
-  "version": "1.49.0",
+  "version": "1.49.1",
   "main": "./dist/server.cjs",
   "type": "module",
   "packageManager": "yarn@1.22.22",

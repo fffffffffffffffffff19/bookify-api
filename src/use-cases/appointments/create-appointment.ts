@@ -51,17 +51,13 @@ export class CreateAppointmentUseCase {
             throw new BusinessRuleError('Appointments cannot be scheduled on non-working days.', 'NON_WORKING_DAY');
         }
 
-        const startHour = startTime.getHours();
-        const endHour = endTime.getHours();
-        const endMinutes = endTime.getMinutes();
-
         const { openHour, closeHour } = businessHours;
+        const openingTime = new Date(startTime);
+        openingTime.setHours(openHour, 0, 0, 0);
+        const closingTime = new Date(startTime);
+        closingTime.setHours(closeHour, 0, 0, 0);
 
-        if (
-            startHour < openHour ||
-            endHour > closeHour ||
-            (endHour === closeHour && endMinutes > 0)
-        ) {
+        if (startTime < openingTime || endTime > closingTime) {
             throw new BusinessRuleError(
                 `Appointments must be within business hours (${String(openHour).padStart(2, '0')}:00 - ${String(closeHour).padStart(2, '0')}:00).`
             );

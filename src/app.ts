@@ -218,6 +218,13 @@ export function buildApp(options: FastifyServerOptions = {}) {
             });
         }
 
+        if (errorRecord.code === 'P2003') {
+            return reply.status(409).send({
+                message: 'This resource is in use and cannot be deleted.',
+                errorCode: 'RESOURCE_IN_USE',
+            });
+        }
+
         const statusCode = typeof errorRecord.statusCode === 'number'
             ? errorRecord.statusCode
             : 500;

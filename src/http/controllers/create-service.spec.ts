@@ -27,4 +27,15 @@ describe('Create Service (E2E)', () => {
 
         expect(response.status).toEqual(201);
     });
+
+    it('rejects a service with a nonpositive price', async () => {
+        const { token } = await provisionAndAuthenticate(app, 'PROVIDER');
+
+        const response = await request(app.server)
+            .post('/services')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ title: 'Invalid Service', price: -1, durationInMinutes: 30 });
+
+        expect(response.status).toEqual(400);
+    });
 });

@@ -11,7 +11,7 @@ export async function updateService(request: FastifyRequest, reply: FastifyReply
     const updateServiceBodySchema = z.object({
         title: z.string().optional(),
         description: z.string().optional(),
-        price: z.number().optional(),
+        price: z.number().positive().optional(),
         durationInMinutes: z.number().int().positive().optional(),
     });
 

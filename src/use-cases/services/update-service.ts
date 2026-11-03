@@ -1,4 +1,4 @@
-import type { ServicesRepository } from '../../repositories/services-repository.js';
+import type { ServiceUpdateData, ServicesRepository } from '../../repositories/services-repository.js';
 import type { Service } from '@prisma/client';
 import { ForbiddenError, ResourceNotFoundError } from '../../errors/application-error.js';
 
@@ -38,20 +38,17 @@ export class UpdateServiceUseCase {
             throw new ForbiddenError();
         }
 
-        service.title = title ?? service.title;
-        service.description = description !== undefined ? description : service.description;
+        const updateData: ServiceUpdateData = {};
+        if (title !== undefined) updateData.title = title;
+        if (description !== undefined) updateData.description = description;
+        if (price !== undefined) updateData.price = price;
+        if (durationInMinutes !== undefined) updateData.durationInMinutes = durationInMinutes;
+        if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
 
-        if (price !== undefined) {
-            (service as any).price = price;
-        }
-
-        service.durationInMinutes = durationInMinutes ?? service.durationInMinutes;
-        service.imageUrl = imageUrl ?? service.imageUrl;
-
-        await this.servicesRepository.save(service);
+        const updatedService = await this.servicesRepository.update(serviceId, updateData);
 
         return {
-            service,
+            service: updatedService,
         };
     }
 }

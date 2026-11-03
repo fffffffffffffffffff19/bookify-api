@@ -1,5 +1,5 @@
 import { Prisma, type Service } from '@prisma/client';
-import type { PublicCatalogService, ServicesRepository } from '../services-repository.js';
+import type { PublicCatalogService, ServiceUpdateData, ServicesRepository } from '../services-repository.js';
 import { randomUUID } from 'node:crypto';
 
 export class InMemoryServicesRepository implements ServicesRepository {
@@ -46,7 +46,7 @@ export class InMemoryServicesRepository implements ServicesRepository {
         return service;
     }
 
-    async update(id: string, data: Prisma.ServiceUpdateInput): Promise<Service> {
+    async update(id: string, data: ServiceUpdateData): Promise<Service> {
         const serviceIndex = this.items.findIndex((item) => item.id === id);
 
         if (serviceIndex === -1) {
@@ -60,12 +60,9 @@ export class InMemoryServicesRepository implements ServicesRepository {
             userId: existingService.userId,
             createdAt: existingService.createdAt,
             title: typeof data.title === 'string' ? data.title : existingService.title,
-            description:
-                data.description !== undefined
-                    ? (data.description as string | null)
-                    : existingService.description,
-            imageUrl: typeof data.imageUrl === 'string' ? data.imageUrl : existingService.imageUrl,
-            price: data.price ? new Prisma.Decimal(data.price.toString()) : existingService.price,
+            description: data.description !== undefined ? data.description : existingService.description,
+            imageUrl: data.imageUrl !== undefined ? data.imageUrl : existingService.imageUrl,
+            price: data.price !== undefined ? new Prisma.Decimal(data.price.toString()) : existingService.price,
             durationInMinutes:
                 typeof data.durationInMinutes === 'number'
                     ? data.durationInMinutes
@@ -75,18 +72,6 @@ export class InMemoryServicesRepository implements ServicesRepository {
 
         this.items[serviceIndex] = updatedService;
         return updatedService;
-    }
-
-    async save(service: Service): Promise<Service> {
-        const serviceIndex = this.items.findIndex((item) => item.id === service.id);
-
-        if (serviceIndex >= 0) {
-            this.items[serviceIndex] = service;
-        } else {
-            this.items.push(service);
-        }
-
-        return service;
     }
 
     async delete(id: string): Promise<void> {

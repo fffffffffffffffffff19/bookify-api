@@ -1,6 +1,6 @@
 import { prisma } from '../../lib/prisma.js';
-import type { Prisma, Service } from '@prisma/client';
-import type { PublicCatalogService, ServicesRepository } from '../services-repository.js';
+import type { Prisma } from '@prisma/client';
+import type { PublicCatalogService, ServiceUpdateData, ServicesRepository } from '../services-repository.js';
 
 export class PrismaServicesRepository implements ServicesRepository {
     async create(data: Prisma.ServiceUncheckedCreateInput) {
@@ -51,12 +51,10 @@ export class PrismaServicesRepository implements ServicesRepository {
         return service;
     }
 
-    async save(service: Service) {
+    async update(id: string, data: ServiceUpdateData) {
         const updatedService = await prisma.service.update({
-            where: {
-                id: service.id,
-            },
-            data: service,
+            where: { id },
+            data,
         });
 
         return updatedService;
