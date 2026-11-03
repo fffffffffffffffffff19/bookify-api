@@ -30,7 +30,18 @@ export async function updateBusinessHours(request: FastifyRequest, reply: Fastif
         action: auditActions.businessHoursUpdated,
         targetEntity: 'BUSINESS_HOURS',
         targetId: 'global',
-        payload: { before, after: businessHours },
+        payload: {
+            before: {
+                allowedDays: [...before.allowedDays],
+                openHour: before.openHour,
+                closeHour: before.closeHour,
+            },
+            after: {
+                allowedDays: [...businessHours.allowedDays],
+                openHour: businessHours.openHour,
+                closeHour: businessHours.closeHour,
+            },
+        },
     });
 
     return reply.status(200).send(businessHours);

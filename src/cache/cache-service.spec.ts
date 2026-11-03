@@ -11,7 +11,7 @@ function createClient(): RedisCacheClient & { values: Map<string, string> } {
             return 'OK';
         }),
         del: vi.fn(async (...keys) => keys.reduce((deleted, key) => deleted + Number(values.delete(key)), 0)),
-        scan: vi.fn(async (cursor, _match, pattern, _count, countValue) => {
+        scan: vi.fn(async (cursor: string, _match: 'MATCH', pattern: string, _count: 'COUNT', countValue: number) => {
             const matching = [...values.keys()].filter((key) => {
                 const regex = new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replaceAll('*', '.*')}$`);
                 return regex.test(key);
@@ -19,7 +19,7 @@ function createClient(): RedisCacheClient & { values: Map<string, string> } {
             const offset = Number(cursor);
             const selected = matching.slice(offset, offset + countValue);
             const nextCursor = offset + countValue < matching.length ? String(offset + countValue) : '0';
-            return [nextCursor, selected];
+            return [nextCursor, selected] as [string, string[]];
         }),
     };
 }

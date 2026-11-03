@@ -20,10 +20,12 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
         password,
     });
 
+    const session = await createSession(user.id);
     const token = await reply.jwtSign(
         {
             role: user.role,
             jti: randomUUID(),
+            sid: session.sessionId,
         },
         {
             sign: {
@@ -33,7 +35,6 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
         }
     );
 
-    const session = await createSession(user.id);
     setRefreshTokenCookie(reply, session.refreshToken);
 
     return reply.status(200).send({

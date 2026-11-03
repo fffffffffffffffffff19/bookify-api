@@ -1,3 +1,4 @@
+import './observability/instrumentation.js';
 import fastify, { type FastifyServerOptions } from 'fastify';
 import fastifyJwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
@@ -10,6 +11,7 @@ import { mkdirSync } from 'node:fs';
 import { ZodError } from 'zod';
 import { env } from './config/env.js';
 import { closeCacheConnection } from './lib/cache.js';
+import { instrumentHttpRequests, shutdownTelemetry } from './observability/instrumentation.js';
 import { ApplicationError } from './errors/application-error.js';
 import { userRoutes } from './http/routes/users.routes.js';
 import { servicesRoutes } from './http/routes/services.routes.js';
@@ -25,6 +27,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export function buildApp(options: FastifyServerOptions = {}) {
     const app = fastify(options);
     app.addHook('onClose', closeCacheConnection);
+    app.addHook('onClose', shutdownTelemetry);
+    instrumentHttpRequests(app);
 
     app.register(fastifyJwt, {
         secret: env.JWT_SECRET,
@@ -80,6 +84,12 @@ export function buildApp(options: FastifyServerOptions = {}) {
                         scheme: 'bearer',
                         bearerFormat: 'JWT',
                         description: '15-minute access JWT returned by POST /sessions.',
+                    },
+                    ApiKeyAuth: {
+                        type: 'apiKey',
+                        in: 'header',
+                        name: 'X-API-Key',
+                        description: 'Scoped partner API key issued by an administrator.',
                     },
                 },
             },

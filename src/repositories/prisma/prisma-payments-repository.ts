@@ -1,4 +1,5 @@
 import { prisma } from '../../lib/prisma.js';
+import { BusinessRuleError, ResourceNotFoundError } from '../../errors/application-error.js';
 import type { PaymentWebhookEvent } from '../../payments/payment-gateway.js';
 import type { CreatePendingPaymentInput, PaymentsRepository } from '../payments-repository.js';
 
@@ -19,6 +20,18 @@ export class PrismaPaymentsRepository implements PaymentsRepository {
     async getOrCreatePendingPayment(input: CreatePendingPaymentInput) {
         return prisma.$transaction(async (transaction) => {
             await transaction.$queryRaw`SELECT "id" FROM "appointments" WHERE "id" = ${input.appointmentId} FOR UPDATE`;
+            const appointment = await transaction.appointment.findUnique({
+                where: { id: input.appointmentId },
+                select: { status: true, paymentStatus: true },
+            });
+            if (!appointment) throw new ResourceNotFoundError('Appointment not found.');
+            if (appointment.status !== 'PENDING') {
+                throw new BusinessRuleError('Only pending appointments can be paid.', 'APPOINTMENT_NOT_PAYABLE');
+            }
+            if (appointment.paymentStatus === 'PAID' || appointment.paymentStatus === 'REFUNDED') {
+                throw new BusinessRuleError('This appointment has already been paid.', 'PAYMENT_ALREADY_COMPLETED');
+            }
+
             const existing = await transaction.payment.findFirst({
                 where: {
                     appointmentId: input.appointmentId,
@@ -46,9 +59,30 @@ export class PrismaPaymentsRepository implements PaymentsRepository {
     }
 
     async attachCheckoutSession(paymentId: string, providerPaymentId: string, checkoutUrl: string) {
-        return prisma.payment.update({
-            where: { id: paymentId },
-            data: { providerPaymentId, checkoutUrl },
+        return prisma.$transaction(async (transaction) => {
+            const existing = await transaction.payment.findUnique({
+                where: { id: paymentId },
+                select: { appointmentId: true },
+            });
+            if (!existing) throw new ResourceNotFoundError('Payment not found.');
+
+            await transaction.$queryRaw`SELECT "id" FROM "appointments" WHERE "id" = ${existing.appointmentId} FOR UPDATE`;
+            const [appointment, payment] = await Promise.all([
+                transaction.appointment.findUnique({
+                    where: { id: existing.appointmentId },
+                    select: { status: true, paymentStatus: true },
+                }),
+                transaction.payment.findUnique({ where: { id: paymentId } }),
+            ]);
+            if (!appointment || !payment) throw new ResourceNotFoundError('Payment not found.');
+            if (appointment.status !== 'PENDING' || appointment.paymentStatus !== 'PENDING' || payment.status !== 'PENDING') {
+                throw new BusinessRuleError('This checkout is no longer active.', 'PAYMENT_ATTEMPT_NOT_ACTIVE');
+            }
+
+            return transaction.payment.update({
+                where: { id: paymentId },
+                data: { providerPaymentId, checkoutUrl },
+            });
         });
     }
 
@@ -62,6 +96,13 @@ export class PrismaPaymentsRepository implements PaymentsRepository {
 
             if (!event.paymentId || event.status === 'IGNORED') return 'processed';
 
+            const initialPayment = await transaction.payment.findUnique({
+                where: { id: event.paymentId },
+                select: { appointmentId: true },
+            });
+            if (!initialPayment) throw new Error(`Payment ${event.paymentId} was not found for a verified webhook.`);
+
+            await transaction.$queryRaw`SELECT "id" FROM "appointments" WHERE "id" = ${initialPayment.appointmentId} FOR UPDATE`;
             const payment = await transaction.payment.findUnique({ where: { id: event.paymentId } });
             if (!payment) throw new Error(`Payment ${event.paymentId} was not found for a verified webhook.`);
 

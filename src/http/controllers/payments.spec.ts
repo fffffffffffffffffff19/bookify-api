@@ -1,6 +1,7 @@
 import { createHmac, randomUUID } from 'node:crypto';
 import { app } from '../../app.js';
 import { prisma } from '../../lib/prisma.js';
+import { PrismaPaymentsRepository } from '../../repositories/prisma/prisma-payments-repository.js';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { provisionAndAuthenticate } from '../../test/e2e/provision-user.js';
@@ -140,5 +141,28 @@ describe('Payments and Stripe webhooks (E2E)', () => {
 
         expect(response.status).toEqual(400);
         expect(response.body.errorCode).toEqual('INVALID_WEBHOOK_SIGNATURE');
+    });
+
+    it('does not create another checkout attempt after payment is completed', async () => {
+        const { appointmentId, client } = await createAppointment();
+        const checkout = await request(app.server)
+            .post(`/appointments/${appointmentId}/pay`)
+            .set('Authorization', `Bearer ${client.token}`);
+        const paymentId = checkout.body.data.payment.id as string;
+
+        await prisma.$transaction([
+            prisma.payment.update({ where: { id: paymentId }, data: { status: 'PAID' } }),
+            prisma.appointment.update({ where: { id: appointmentId }, data: { paymentStatus: 'PAID' } }),
+        ]);
+
+        await expect(new PrismaPaymentsRepository().getOrCreatePendingPayment({
+            appointmentId,
+            provider: 'MOCK',
+            amount: '37.5',
+            currency: 'usd',
+        })).rejects.toMatchObject({ errorCode: 'PAYMENT_ALREADY_COMPLETED' });
+
+        const payments = await prisma.payment.findMany({ where: { appointmentId } });
+        expect(payments).toHaveLength(1);
     });
 });

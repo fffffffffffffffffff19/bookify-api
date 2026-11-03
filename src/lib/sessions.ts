@@ -46,20 +46,20 @@ export async function rotateRefreshToken(refreshToken: string) {
             return { status: 'invalid' as const };
         }
 
-        if (storedToken.consumedAt) {
-            await transaction.session.updateMany({
-                where: { userId: storedToken.session.userId, revokedAt: null },
-                data: { revokedAt: now },
-            });
-            return { status: 'reuse' as const };
-        }
-
         if (
             storedToken.expiresAt <= now ||
             storedToken.session.expiresAt <= now ||
             storedToken.session.revokedAt
         ) {
             return { status: 'invalid' as const };
+        }
+
+        if (storedToken.consumedAt) {
+            await transaction.session.updateMany({
+                where: { userId: storedToken.session.userId, revokedAt: null },
+                data: { revokedAt: now },
+            });
+            return { status: 'reuse' as const };
         }
 
         const consumed = await transaction.refreshToken.updateMany({
@@ -125,12 +125,36 @@ export async function listActiveSessions(userId: string) {
     });
 }
 
+export async function isSessionActive(userId: string, sessionId: string) {
+    const session = await prisma.session.findFirst({
+        where: {
+            id: sessionId,
+            userId,
+            revokedAt: null,
+            expiresAt: { gt: new Date() },
+        },
+        select: { id: true },
+    });
+    return session !== null;
+}
+
 export async function revokeSession(userId: string, sessionId?: string) {
     return prisma.session.updateMany({
         where: {
             userId,
             revokedAt: null,
             ...(sessionId ? { id: sessionId } : {}),
+        },
+        data: { revokedAt: new Date() },
+    });
+}
+
+export async function revokeOtherSessions(userId: string, activeSessionId: string) {
+    return prisma.session.updateMany({
+        where: {
+            userId,
+            id: { not: activeSessionId },
+            revokedAt: null,
         },
         data: { revokedAt: new Date() },
     });

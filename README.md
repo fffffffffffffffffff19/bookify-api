@@ -20,6 +20,9 @@ Bookify is a production-minded REST API for service discovery and appointment op
 - **Transactional appointment notifications:** appointment creation and cancellation write an outbox event in the same serializable transaction; a polling BullMQ worker delivers mock notifications with bounded exponential retries.
 - **Payment checkout and webhooks:** appointments use a trusted service price to create Stripe Checkout Sessions (or local mock sessions); signed Stripe events update payment state transactionally and are deduplicated by provider event ID.
 - **Redis read caching:** the public service catalog and date-specific availability use short-lived, namespaced cache entries; cache outages fall back to PostgreSQL without failing public reads.
+- **Scoped partner API keys:** administrator-issued keys are stored as SHA-256 hashes, return their secret once, and authorize partner routes by explicit scopes.
+- **OpenTelemetry observability:** opt-in request spans and latency/count metrics export over OTLP, with automatic HTTP and PostgreSQL instrumentation.
+- **Streaming admin exports:** appointment reports stream as CSV in bounded keyset batches rather than materializing the full dataset in memory.
 - **Role-based access control:** `CLIENT`, `PROVIDER`, and `ADMIN` roles are enforced alongside resource ownership rules. Public registration creates client accounts.
 - **Refresh-token sessions:** 15-minute bearer access tokens pair with seven-day `HttpOnly` refresh cookies. Refresh tokens rotate on use, are stored as hashes, and replay revokes all active sessions for the affected user.
 - **Immutable audit trail:** sensitive profile, business-hours, and session-revocation events are appended with actor, request, target, and change metadata; administrators can filter and paginate the history.
@@ -158,6 +161,11 @@ Call `POST /auth/refresh` to rotate the refresh cookie and receive a new access 
 | `GET` | `/provider/appointments` | Provider or admin | View the provider schedule |
 | `GET` | `/admin/appointments` | Admin | List and filter all appointments |
 | `GET` | `/admin/metrics` | Admin | View appointment, user, and performance metrics |
+| `GET` | `/admin/reports/stream` | Admin | Stream appointments as a CSV attachment |
+| `POST` | `/admin/api-keys` | Admin | Create a partner API key with explicit scopes |
+| `DELETE` | `/admin/api-keys/:id` | Admin | Revoke a partner API key |
+| `GET` | `/partner/services` | API key with `services:read` | Read the partner service catalog |
+| `GET` | `/partner/services/:serviceId/availability` | API key with `availability:read` | Read public service availability |
 | `GET` | `/admin/audit-logs` | Admin | Filter and paginate the immutable audit trail |
 | `GET` | `/admin/business-hours` | Admin | Read global business hours |
 | `PATCH` | `/admin/business-hours` | Admin | Update global business hours |
@@ -173,6 +181,10 @@ The admin audit trail supports `page`, `perPage`, `action`, `actorId`, `from`, a
 Payment initialization reads the appointment's price from its service record; clients cannot provide or override the amount. Set `PAYMENT_PROVIDER=mock` for local development, or configure `PAYMENT_PROVIDER=stripe`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET` for Stripe Checkout. Set `PAYMENT_SUCCESS_URL`, `PAYMENT_CANCEL_URL`, and `PAYMENT_CURRENCY` as needed. Production requires the Stripe provider and both Stripe secrets. The public `POST /webhooks/stripe` endpoint verifies Stripe's timestamped signature against the unmodified request body; duplicate event IDs are accepted but not applied twice. For local Stripe testing, forward events with `stripe listen --forward-to localhost:3333/webhooks/stripe`.
 
 The Redis cache uses `REDIS_URL` and `CACHE_KEY_PREFIX` (default `bookify`). `SERVICE_CATALOG_CACHE_TTL_SECONDS` defaults to 60 seconds and `SERVICE_AVAILABILITY_CACHE_TTL_SECONDS` to 30 seconds. Service mutations invalidate the catalog and affected service availability; appointment slot changes invalidate the affected service/date key, and business-hours changes clear all availability entries. Pattern invalidation uses Redis `SCAN`, and cache reads, writes, and invalidations fail open so database-backed reads and mutations continue when Redis is unavailable.
+
+API keys are created and revoked through admin routes. The plaintext value is returned only once; store it as a secret and send it in `X-API-Key`. Supported scopes are `services:read` and `availability:read`; routes reject keys without the required scope and reject revoked or expired keys. Keys are never stored in plaintext. System-wide appointment exports remain admin-only.
+
+OpenTelemetry is disabled by default. Set `OTEL_ENABLED=true` and `OTEL_EXPORTER_OTLP_ENDPOINT` to export traces and metrics to an OTLP collector; HTTP and PostgreSQL auto-instrumentation is enabled alongside request count/latency measurements. `yarn typecheck` checks the entire TypeScript project. `yarn openapi:check` boots the API in the isolated E2E environment and verifies that routes and security declarations remain represented in the generated OpenAPI document; CI runs both checks.
 
 ## Testing and Build
 

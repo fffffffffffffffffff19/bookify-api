@@ -4,6 +4,7 @@ import { auditActions } from '../../audit/audit-logger.js';
 import { auditRequestContext } from '../../audit/audit-request-context.js';
 import { makeAuditLogger } from '../../use-cases/factories/make-audit-logger.js';
 import { makeUpdateUserProfileUseCase } from '../../use-cases/factories/make-update-user-profile-use-case.js';
+import { revokeOtherSessions } from '../../lib/sessions.js';
 
 const updateProfileBodySchema = z.object({
     name: z.string().min(2).optional(),
@@ -25,6 +26,10 @@ export async function updateProfile(request: FastifyRequest, reply: FastifyReply
         ...(body.oldPassword !== undefined ? { oldPassword: body.oldPassword } : {}),
         ...(body.newPassword !== undefined ? { newPassword: body.newPassword } : {}),
     });
+
+    if (body.newPassword !== undefined) {
+        await revokeOtherSessions(request.user.sub, request.user.sid);
+    }
 
     if (Object.keys(body).length > 0) {
         await makeAuditLogger().log({

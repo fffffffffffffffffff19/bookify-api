@@ -44,7 +44,13 @@ export const errorResponses = {
     },
 };
 
-export function responses(successStatus: 200 | 201 = 200, description = 'Successful response') {
+export function responses(successStatus: 200 | 201 | 204 = 200, description = 'Successful response') {
+    if (successStatus === 204) {
+        return {
+            204: { description },
+            ...errorResponses,
+        };
+    }
     return {
         [successStatus]: {
             description,
@@ -111,6 +117,16 @@ export const schemas = {
             phone: { type: 'string' },
         },
         required: ['name', 'email', 'password'],
+    },
+    createApiKeyBody: {
+        type: 'object',
+        properties: {
+            name: { type: 'string', minLength: 1, maxLength: 100 },
+            scopes: { type: 'array', items: { type: 'string', enum: ['services:read', 'availability:read'] }, minItems: 1, maxItems: 2 },
+            expiresAt: { type: 'string', format: 'date-time' },
+        },
+        required: ['name', 'scopes'],
+        additionalProperties: false,
     },
     authenticateBody: {
         type: 'object',

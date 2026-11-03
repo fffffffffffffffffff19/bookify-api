@@ -4,6 +4,7 @@ const database = vi.hoisted(() => ({
     createSession: vi.fn(),
     updateSession: vi.fn(),
     findSessions: vi.fn(),
+    findActiveSession: vi.fn(),
     findRefreshToken: vi.fn(),
     consumeRefreshToken: vi.fn(),
     createRefreshToken: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock('../../lib/prisma.js', () => ({
             create: database.createSession,
             updateMany: database.updateSession,
             findMany: database.findSessions,
+            findFirst: database.findActiveSession,
         },
         refreshToken: {
             findUnique: database.findRefreshToken,
@@ -29,8 +31,10 @@ vi.mock('../../lib/prisma.js', () => ({
 import {
     createSession,
     listActiveSessions,
+    isSessionActive,
     revokeRefreshToken,
     revokeSession,
+    revokeOtherSessions,
     rotateRefreshToken,
 } from '../../lib/sessions.js';
 
@@ -49,11 +53,14 @@ describe('Session management', () => {
         database.updateSession.mockResolvedValue({ count: 1 });
         database.consumeRefreshToken.mockResolvedValue({ count: 1 });
         database.createRefreshToken.mockResolvedValue({ id: 'refresh-id' });
+        database.findActiveSession.mockResolvedValue({ id: 'session-id' });
     });
 
     it('creates a session with only a SHA-256 refresh-token hash stored', async () => {
         const result = await createSession('user-id');
-        const refreshTokenData = database.createSession.mock.calls[0][0].data.refreshTokens.create;
+        const [createCall] = database.createSession.mock.calls;
+        if (!createCall) throw new Error('Expected session creation call.');
+        const refreshTokenData = createCall[0].data.refreshTokens.create;
 
         expect(result.sessionId).toEqual('session-id');
         expect(result.refreshToken).toHaveLength(43);
@@ -84,7 +91,9 @@ describe('Session management', () => {
         expect(database.createRefreshToken).toHaveBeenCalledWith(expect.objectContaining({
             data: expect.objectContaining({ sessionId: 'session-id' }),
         }));
-        expect(database.createRefreshToken.mock.calls[0][0].data.tokenHash)
+        const [createRefreshTokenCall] = database.createRefreshToken.mock.calls;
+        if (!createRefreshTokenCall) throw new Error('Expected refresh token creation call.');
+        expect(createRefreshTokenCall[0].data.tokenHash)
             .not.toEqual(result.status === 'rotated' ? result.refreshToken : '');
     });
 
@@ -121,6 +130,21 @@ describe('Session management', () => {
         });
     });
 
+    it('checks that access-token sessions are active and owned by the token subject', async () => {
+        database.findActiveSession.mockResolvedValue({ id: 'session-id' });
+
+        await expect(isSessionActive('user-id', 'session-id')).resolves.toBe(true);
+        expect(database.findActiveSession).toHaveBeenCalledWith({
+            where: {
+                id: 'session-id',
+                userId: 'user-id',
+                revokedAt: null,
+                expiresAt: { gt: expect.any(Date) },
+            },
+            select: { id: true },
+        });
+    });
+
     it('revokes the refresh-token session on logout', async () => {
         database.findRefreshToken.mockResolvedValue({ sessionId: 'session-id' });
 
@@ -130,5 +154,31 @@ describe('Session management', () => {
             where: { id: 'session-id', revokedAt: null },
             data: { revokedAt: expect.any(Date) },
         });
+    });
+
+    it('revokes other sessions while preserving the active password-change session', async () => {
+        await revokeOtherSessions('user-id', 'current-session-id');
+
+        expect(database.updateSession).toHaveBeenCalledWith({
+            where: { userId: 'user-id', id: { not: 'current-session-id' }, revokedAt: null },
+            data: { revokedAt: expect.any(Date) },
+        });
+    });
+
+    it('does not classify an expired consumed refresh token as replay', async () => {
+        database.findRefreshToken.mockResolvedValue({
+            id: 'expired-consumed-token',
+            sessionId: 'session-id',
+            consumedAt: new Date(Date.now() - 10_000),
+            expiresAt: new Date(Date.now() - 1_000),
+            session: {
+                userId: 'user-id',
+                expiresAt: new Date(Date.now() + 60_000),
+                revokedAt: null,
+            },
+        });
+
+        await expect(rotateRefreshToken('expired-token')).resolves.toEqual({ status: 'invalid' });
+        expect(database.updateSession).not.toHaveBeenCalled();
     });
 });

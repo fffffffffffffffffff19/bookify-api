@@ -1,5 +1,14 @@
 import type { Prisma } from '@prisma/client';
-import type { AuditLogsRepository, ListAuditLogsInput } from '../repositories/audit-logs-repository.js';
+import type { AuditLogsRepository } from '../repositories/audit-logs-repository.js';
+
+export interface AuditLogListQuery {
+    page: number;
+    perPage: number;
+    action?: string;
+    actorId?: string;
+    from?: Date;
+    to?: Date;
+}
 
 export const auditActions = {
     userProfileUpdated: 'USER_PROFILE_UPDATED',
@@ -28,12 +37,12 @@ export class AuditLogger {
         return this.auditLogsRepository.create(input);
     }
 
-    async list(input: ListAuditLogsInput & { page: number; perPage: number }) {
+    async list(input: AuditLogListQuery) {
         const { logs, total } = await this.auditLogsRepository.list({
-            action: input.action,
-            actorId: input.actorId,
-            from: input.from,
-            to: input.to,
+            ...(input.action ? { action: input.action } : {}),
+            ...(input.actorId ? { actorId: input.actorId } : {}),
+            ...(input.from ? { from: input.from } : {}),
+            ...(input.to ? { to: input.to } : {}),
             skip: (input.page - 1) * input.perPage,
             take: input.perPage,
         });

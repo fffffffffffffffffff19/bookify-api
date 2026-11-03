@@ -106,6 +106,7 @@ export class InMemoryAppointmentsRepository implements AppointmentsRepository {
             startTime: new Date(data.startTime),
             endTime: new Date(data.endTime),
             status: data.status ?? 'PENDING',
+            paymentStatus: data.paymentStatus ?? 'PENDING',
             createdAt: new Date(),
             updatedAt: new Date(),
         };

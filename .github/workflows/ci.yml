@@ -42,6 +42,9 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
+      - name: TypeScript Type Check
+        run: yarn typecheck
+
       - name: Run Prisma Migrations
         env:
           DATABASE_URL: "postgresql://docker:docker@localhost:5432/bookifyapi?schema=public"
@@ -58,3 +61,9 @@ jobs:
           DATABASE_URL: "postgresql://docker:docker@localhost:5432/bookifyapi?schema=public"
           JWT_SECRET: "test-secret"
         run: yarn test:e2e
+
+      - name: OpenAPI Contract Check
+        env:
+          DATABASE_URL: "postgresql://docker:docker@localhost:5432/bookifyapi?schema=public"
+          JWT_SECRET: "test-secret"
+        run: yarn openapi:check

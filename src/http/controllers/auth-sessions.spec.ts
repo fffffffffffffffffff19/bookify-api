@@ -2,6 +2,7 @@ import { app } from '../../app.js';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
+import { prisma } from '../../lib/prisma.js';
 
 function cookieFrom(response: { headers: { 'set-cookie'?: string[] | string } }) {
     const header = response.headers['set-cookie'];
@@ -100,7 +101,13 @@ describe('Refresh tokens and sessions (E2E)', () => {
         const afterAllRevoked = await request(app.server)
             .get('/auth/sessions')
             .set('Authorization', `Bearer ${second.token}`);
-        expect(afterAllRevoked.body.data.sessions).toHaveLength(0);
+        expect(afterAllRevoked.status).toEqual(401);
+        const revokedSessions = await prisma.session.findMany({
+            where: { user: { email: second.email } },
+            select: { revokedAt: true },
+        });
+        expect(revokedSessions.length).toBeGreaterThan(0);
+        expect(revokedSessions.every((session) => session.revokedAt !== null)).toBe(true);
     });
 
     it('logout revokes the current refresh session and clears its cookie', async () => {
@@ -119,6 +126,27 @@ describe('Refresh tokens and sessions (E2E)', () => {
         expect(refresh.status).toEqual(401);
     });
 
+    it('invalidates other access sessions after a password change but preserves the current session', async () => {
+        const first = await login();
+        const second = await authenticate(first.email, first.password);
+
+        const changed = await request(app.server)
+            .patch('/me')
+            .set('Authorization', `Bearer ${first.token}`)
+            .send({ oldPassword: first.password, newPassword: 'new-password-123' });
+        expect(changed.status).toEqual(200);
+
+        const currentSession = await request(app.server)
+            .get('/me')
+            .set('Authorization', `Bearer ${first.token}`);
+        const otherSession = await request(app.server)
+            .get('/me')
+            .set('Authorization', `Bearer ${second.token}`);
+
+        expect(currentSession.status).toEqual(200);
+        expect(otherSession.status).toEqual(401);
+    });
+
     it('revokes all of the user sessions when a consumed token is reused', async () => {
         const first = await login();
         const second = await authenticate(first.email, first.password);
@@ -135,7 +163,7 @@ describe('Refresh tokens and sessions (E2E)', () => {
         const activeSessions = await request(app.server)
             .get('/auth/sessions')
             .set('Authorization', `Bearer ${second.token}`);
-        expect(activeSessions.body.data.sessions).toHaveLength(0);
+        expect(activeSessions.status).toEqual(401);
 
         const otherSessionRefresh = await request(app.server)
             .post('/auth/refresh')

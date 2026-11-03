@@ -9,6 +9,8 @@ import { fetchServiceAvailability } from '../controllers/fetch-service-availabil
 import { fetchPublicServiceCatalog } from '../controllers/fetch-public-service-catalog.js';
 import { uploadServiceImage } from '../controllers/upload-image.js';
 import { bearerSecurity, errorResponses, responses, schemas } from '../schemas/openapi.js';
+import { requireApiKey } from '../middlewares/require-api-key.js';
+import { fetchPartnerServices } from '../controllers/fetch-partner-services.js';
 
 export async function servicesRoutes(app: FastifyInstance) {
     app.get('/services/public', {
@@ -18,6 +20,26 @@ export async function servicesRoutes(app: FastifyInstance) {
             response: responses(200, 'Services with provider summaries'),
         },
     }, fetchPublicServiceCatalog);
+    app.get('/partner/services', {
+        onRequest: [requireApiKey(['services:read'])],
+        schema: {
+            tags: ['Services'],
+            summary: 'Read the public service catalog using a scoped partner API key',
+            security: [{ ApiKeyAuth: [] }],
+            response: responses(200, 'Partner service catalog'),
+        },
+    }, fetchPartnerServices);
+    app.get('/partner/services/:serviceId/availability', {
+        onRequest: [requireApiKey(['availability:read'])],
+        schema: {
+            tags: ['Services'],
+            summary: 'Read public availability using a scoped partner API key',
+            security: [{ ApiKeyAuth: [] }],
+            params: schemas.serviceIdParams,
+            querystring: schemas.availabilityQuery,
+            response: responses(200, 'Available start times'),
+        },
+    }, fetchServiceAvailability);
     app.get('/services', {
         onRequest: [verifyJWT],
         schema: {

@@ -20,6 +20,8 @@ const envSchema = z.object({
     CACHE_KEY_PREFIX: z.string().min(1).default('bookify'),
     SERVICE_CATALOG_CACHE_TTL_SECONDS: z.coerce.number().int().min(1).default(60),
     SERVICE_AVAILABILITY_CACHE_TTL_SECONDS: z.coerce.number().int().min(1).default(30),
+    OTEL_ENABLED: z.enum(['true', 'false']).default('false').transform((value) => value === 'true'),
+    OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().default('http://localhost:4318'),
     UPLOAD_DIR: z.string().min(1).default('uploads'),
     JWT_SECRET: z.string().min(1),
     PAYMENT_PROVIDER: z.enum(['mock', 'stripe']).default('mock'),

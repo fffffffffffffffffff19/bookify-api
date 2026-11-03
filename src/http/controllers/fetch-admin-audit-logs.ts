@@ -17,7 +17,14 @@ const auditLogsQuerySchema = z.object({
 export async function fetchAdminAuditLogs(request: FastifyRequest, reply: FastifyReply) {
     const query = auditLogsQuerySchema.parse(request.query);
     const auditLogger = makeAuditLogger();
-    const result = await auditLogger.list(query);
+    const result = await auditLogger.list({
+        page: query.page,
+        perPage: query.perPage,
+        ...(query.action ? { action: query.action } : {}),
+        ...(query.actorId ? { actorId: query.actorId } : {}),
+        ...(query.from ? { from: query.from } : {}),
+        ...(query.to ? { to: query.to } : {}),
+    });
 
     return reply.status(200).send(result);
 }

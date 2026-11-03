@@ -9,10 +9,10 @@ export class PrismaAuditLogsRepository implements AuditLogsRepository {
                 actorRole: input.actorRole,
                 action: input.action,
                 targetEntity: input.targetEntity,
-                targetId: input.targetId,
                 payload: input.payload ?? {},
-                ipAddress: input.ipAddress,
-                userAgent: input.userAgent,
+                ...(input.targetId !== undefined ? { targetId: input.targetId } : {}),
+                ...(input.ipAddress !== undefined ? { ipAddress: input.ipAddress } : {}),
+                ...(input.userAgent !== undefined ? { userAgent: input.userAgent } : {}),
             },
         });
     }

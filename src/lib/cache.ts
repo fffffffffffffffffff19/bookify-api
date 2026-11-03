@@ -1,4 +1,4 @@
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 import { env } from '../config/env.js';
 import { CacheService } from '../cache/cache-service.js';
 
@@ -8,7 +8,7 @@ const redisClient = new Redis(env.REDIS_URL, {
     maxRetriesPerRequest: 1,
     connectTimeout: 750,
     commandTimeout: 750,
-    retryStrategy: (attempt) => Math.min(attempt * 250, 1000),
+    retryStrategy: (attempt: number) => Math.min(attempt * 250, 1000),
 });
 
 redisClient.on('error', () => { });

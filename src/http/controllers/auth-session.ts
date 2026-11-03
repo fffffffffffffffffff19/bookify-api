@@ -74,7 +74,7 @@ export async function refreshSession(request: FastifyRequest, reply: FastifyRepl
     }
 
     const token = await reply.jwtSign(
-        { role: result.user.role, jti: randomUUID() },
+        { role: result.user.role, jti: randomUUID(), sid: result.sessionId },
         { sign: { sub: result.user.id, expiresIn: ACCESS_TOKEN_TTL } },
     );
 

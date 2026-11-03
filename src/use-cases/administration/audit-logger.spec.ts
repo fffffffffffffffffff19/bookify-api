@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AuditLogger } from '../../audit/audit-logger.js';
+import { AuditLogger, auditActions } from '../../audit/audit-logger.js';
 import type { AuditLogsRepository, CreateAuditLogInput, ListAuditLogsInput } from '../../repositories/audit-logs-repository.js';
 
 describe('Audit Logger', () => {
@@ -16,13 +16,13 @@ describe('Audit Logger', () => {
         const entry: CreateAuditLogInput = {
             actorId: 'actor-1',
             actorRole: 'ADMIN',
-            action: 'BUSINESS_HOURS_UPDATED',
+            action: auditActions.businessHoursUpdated,
             targetEntity: 'BUSINESS_HOURS',
             targetId: 'global',
             payload: { before: { openHour: 8 }, after: { openHour: 9 } },
         };
 
-        await logger.log(entry);
+        await logger.log({ ...entry, action: auditActions.businessHoursUpdated });
 
         expect(writes).toEqual([entry]);
         expect(Object.keys(repository).sort()).toEqual(['create', 'list']);
